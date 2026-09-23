@@ -1,0 +1,622 @@
+# cSpell:disable
+openapi: 3.0.3
+info:
+  title: BigoBooks Rentas API
+  description: Microservicio de rentas digitales de libros. Los schemas de respuesta
+    se reutilizan del common (Entrega #1); solo los DTOs de request son propios.
+  version: 1.0.0
+paths:
+  /rent-coupon-templates:
+    post:
+      tags: [rent-coupon-templates]
+      operationId: createRentCouponTemplate
+      summary: Crea una plantilla de cupon para rentas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RentCouponTemplateDto'
+      responses:
+        '201':
+          description: Plantilla creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentCouponTemplateDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags: [rent-coupon-templates]
+      operationId: listRentCouponTemplates
+      summary: Lista plantillas de cupones paginada, con filtros opcionales
+      parameters:
+        - name: code
+          in: query
+          required: false
+          description: Busqueda por codigo (contiene)
+          schema:
+            type: string
+        - name: active
+          in: query
+          required: false
+          description: Filtra por vigencia (startDate <= now <= endDate)
+          schema:
+            type: boolean
+        - name: minDiscountPercentage
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pagina de plantillas (content = RentCouponTemplateDto[])
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseDto'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /rent-coupon-templates/{id}:
+    get:
+      tags: [rent-coupon-templates]
+      operationId: getRentCouponTemplateById
+      summary: Obtiene una plantilla de cupon por id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Plantilla encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentCouponTemplateDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [rent-coupon-templates]
+      operationId: updateRentCouponTemplate
+      summary: Actualiza una plantilla de cupon por id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RentCouponTemplateDto'
+      responses:
+        '200':
+          description: Plantilla actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentCouponTemplateDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [rent-coupon-templates]
+      operationId: deleteRentCouponTemplate
+      summary: Elimina logicamente una plantilla de cupon por id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Eliminada
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /rents:
+    post:
+      tags: [rents]
+      operationId: createRent
+      summary: Crea una renta con sus detalles y cupon opcional
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RentCreateRequest'
+      responses:
+        '201':
+          description: Renta creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags: [rents]
+      operationId: listRents
+      summary: Lista rentas paginada, con filtros opcionales
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: bookId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: createdFrom
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: createdTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: overdue
+          in: query
+          required: false
+          description: true = rentas con algun detalle cuya fecha de devolucion ya vencio
+          schema:
+            type: boolean
+        - name: couponCode
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pagina de rentas (content = RentDto[])
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseDto'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /rents/{id}:
+    get:
+      tags: [rents]
+      operationId: getRentById
+      summary: Obtiene una renta por id con detalles y cupones
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Renta encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [rents]
+      operationId: updateRent
+      summary: Actualiza una renta por id (usuario asignado)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RentUpdateRequest'
+      responses:
+        '200':
+          description: Renta actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [rents]
+      operationId: deleteRent
+      summary: Elimina logicamente una renta por id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Eliminada
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /rents/{id}/coupons:
+    post:
+      tags: [rents]
+      operationId: applyCouponToRent
+      summary: Aplica un cupon a una renta (gestion de la asociacion Rent-Cupones)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id de la renta
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RentCouponApply'
+      responses:
+        '201':
+          description: Cupon aplicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /rents/{id}/coupons/{rentCouponId}:
+    delete:
+      tags: [rents]
+      operationId: removeCouponFromRent
+      summary: Elimina la asociacion de un cupon aplicado a una renta
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id de la renta
+          schema:
+            type: integer
+            format: int64
+        - name: rentCouponId
+          in: path
+          required: true
+          description: Id de la asociacion RentCoupon
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Asociacion eliminada
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /rents/details/{rentDetailId}/extensions:
+    post:
+      tags: [rents]
+      operationId: extendRent
+      summary: Extiende el alquiler de un detalle de renta
+      parameters:
+        - name: rentDetailId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RentExtensionCreate'
+      responses:
+        '201':
+          description: Extension creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentExtensionDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  responses:
+    BadRequest:
+      description: Peticion invalida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorDto'
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorDto'
+    InternalServerError:
+      description: Error interno
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorDto'
+  schemas:
+    ApiErrorDto:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          format: int32
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+    PageResponseDto:
+      type: object
+      description: Envoltura de paginacion (content es una lista del DTO correspondiente, segun el endpoint)
+      properties:
+        content:
+          type: array
+          items:
+            type: object
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    RentCreateRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Opcional; la renta puede estar sin usuario
+        couponCode:
+          type: string
+          description: Codigo de cupon opcional para aplicar al total
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RentItemCreate'
+      required:
+        - items
+    RentItemCreate:
+      type: object
+      properties:
+        bookId:
+          type: integer
+          format: int64
+        monthsRented:
+          type: integer
+          format: int32
+      required:
+        - bookId
+        - monthsRented
+    RentUpdateRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Nuevo usuario asignado a la renta (null = sin usuario)
+    RentCouponApply:
+      type: object
+      properties:
+        couponCode:
+          type: string
+      required:
+        - couponCode
+    RentExtensionCreate:
+      type: object
+      properties:
+        monthsExtended:
+          type: integer
+          format: int32
+      required:
+        - monthsExtended
+    RentDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        totalPrice:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        rentDetails:
+          type: array
+          items:
+            $ref: '#/components/schemas/RentDetailDto'
+        rentCoupons:
+          type: array
+          items:
+            $ref: '#/components/schemas/RentCouponDto'
+    RentDetailDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        bookId:
+          type: integer
+          format: int64
+        price:
+          type: integer
+          format: int64
+        monthsRented:
+          type: integer
+        returnDate:
+          type: string
+          format: date
+        rentId:
+          type: integer
+          format: int64
+    RentExtensionDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        rentDetailId:
+          type: integer
+          format: int64
+        monthsExtended:
+          type: integer
+        extraPrice:
+          type: integer
+          format: int64
+        newReturnDate:
+          type: string
+          format: date
+    RentCouponTemplateDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        discountPercentage:
+          type: integer
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        maxUses:
+          type: integer
+        maxDiscountAmount:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    RentCouponDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        rentId:
+          type: integer
+          format: int64
+        couponTemplateId:
+          type: integer
+          format: int64
+        discountPercentage:
+          type: integer
+        discountAmount:
+          type: integer
+          format: int64
+        appliedAt:
+          type: string
+          format: date-time

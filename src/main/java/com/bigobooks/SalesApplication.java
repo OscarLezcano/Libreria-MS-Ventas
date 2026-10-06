@@ -9,7 +9,7 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
- * Microservicio de rentas. Se excluye {@link BigoBooksApplication} (la clase
+ * Microservicio de ventas. Se excluye {@link BigoBooksApplication} (la clase
  * de arranque del common) del scan de componentes: esta en el classpath por el
  * JAR compartido y no debe instanciarse dentro de este servicio.
  */
@@ -18,11 +18,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @ComponentScan(basePackages = "com.bigobooks",
 		excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = BigoBooksApplication.class))
 @EnableJpaRepositories(basePackages = "com.bigobooks.repositories")
-@EntityScan(basePackages = "com.bigobooks.entities")
-public class RentsApplication {
+@EntityScan(basePackages = { "com.bigobooks.entities", "com.bigobooks.model" })
+public class SalesApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(RentsApplication.class, args);
+		SpringApplication.run(SalesApplication.class, args);
 	}
 
 }

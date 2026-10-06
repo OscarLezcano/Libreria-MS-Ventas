@@ -1,27 +1,24 @@
 package com.bigobooks.services;
 
+import org.springframework.stereotype.Service;
+
 import com.bigobooks.entities.book.Book;
 import com.bigobooks.exception.NotFoundException;
 import com.bigobooks.repositories.BookRepository;
-
-import org.springframework.stereotype.Service;
+import com.bigobooks.service.BaseService;
 
 /**
- * Acceso a libros (entidad del common gestionada por otro microservicio).
- * Solo lectura: este servicio no crea ni modifica libros.
+ * Servicio de apoyo (sin controlador): acceso de solo lectura a los libros
+ * del catalogo compartido.
  */
 @Service
-public class BookService extends BaseService<Book, Long, BookRepository> {
+public class BookService extends BaseService<Book, BookRepository> {
 
 	public BookService(BookRepository repository) {
 		super(repository);
 	}
 
 	public Book requireById(Long id) {
-		try {
-			return getById(id);
-		} catch (IllegalArgumentException e) {
-			throw new NotFoundException("No existe el libro con id " + id);
-		}
+		return findById(id).orElseThrow(() -> new NotFoundException("No existe el libro con id " + id));
 	}
 }

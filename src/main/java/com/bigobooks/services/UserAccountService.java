@@ -1,27 +1,23 @@
 package com.bigobooks.services;
 
+import org.springframework.stereotype.Service;
+
 import com.bigobooks.entities.auth.UserAccount;
 import com.bigobooks.exception.NotFoundException;
 import com.bigobooks.repositories.UserAccountRepository;
-
-import org.springframework.stereotype.Service;
+import com.bigobooks.service.BaseService;
 
 /**
- * Acceso a usuarios (entidad del common gestionada por otro microservicio).
- * Solo lectura: este servicio no crea ni modifica usuarios.
+ * Servicio de apoyo (sin controlador): acceso a los usuarios/compradores.
  */
 @Service
-public class UserAccountService extends BaseService<UserAccount, Long, UserAccountRepository> {
+public class UserAccountService extends BaseService<UserAccount, UserAccountRepository> {
 
 	public UserAccountService(UserAccountRepository repository) {
 		super(repository);
 	}
 
 	public UserAccount requireById(Long id) {
-		try {
-			return getById(id);
-		} catch (IllegalArgumentException e) {
-			throw new NotFoundException("No existe el usuario con id " + id);
-		}
+		return findById(id).orElseThrow(() -> new NotFoundException("No existe el usuario con id " + id));
 	}
 }

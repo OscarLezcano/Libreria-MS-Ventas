@@ -1,0 +1,209 @@
+# cSpell:disable
+# Migraciones propias del microservicio de ventas sobre el esquema
+# compartido (Libreria-Common). Todos los changesets usan preconditions
+# con onFail: MARK_RAN, asi que pueden correr aunque las columnas ya
+# hayan sido creadas por ddl-auto=update del common.
+databaseChangeLog:
+  # orders.user_id: usuario que realizo la venta (cliente)
+  - changeSet:
+      id: sales-001-orders-user-id
+      author: sales-service
+      comment: Columna user_id en orders (cliente de la venta)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: orders
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'user_id'"
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: user_id
+                  type: BIGINT
+
+  # FK orders.user_id -> user_account(id)
+  - changeSet:
+      id: sales-002-orders-user-fk
+      author: sales-service
+      comment: FK de orders.user_id hacia user_account
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: orders
+        - tableExists:
+            tableName: user_account
+        - columnExists:
+            tableName: orders
+            columnName: user_id
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.table_constraints WHERE table_name = 'orders' AND constraint_name = 'fk_orders_user_account'"
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: orders
+            baseColumnNames: user_id
+            referencedTableName: user_account
+            referencedColumnNames: id
+            constraintName: fk_orders_user_account
+            onDelete: SET NULL
+            validate: true
+
+  # book.price: precio de venta en guaranies
+  - changeSet:
+      id: sales-003-book-price
+      author: sales-service
+      comment: Columna price en book (precio de venta)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: book
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'book' AND column_name = 'price'"
+      changes:
+        - addColumn:
+            tableName: book
+            columns:
+              - column:
+                  name: price
+                  type: BIGINT
+
+  # sales_promotion: entidad propia de este microservicio (simple)
+  - changeSet:
+      id: sales-004-create-promotion
+      author: sales-service
+      comment: Tabla propia de promociones (entidad simple del microservicio)
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.tables WHERE table_name = 'sales_promotion'"
+      changes:
+        - createTable:
+            tableName: sales_promotion
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_sales_promotion
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: discount_percent
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+
+  # Secuencia implicita que usa Hibernate para sales_promotion
+  # (mismo patron que el resto del esquema: <tabla>_seq, incrementBy 50)
+  - changeSet:
+      id: sales-005-create-promotion-seq
+      author: sales-service
+      comment: Secuencia de ids de sales_promotion
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.sequences WHERE sequence_name = 'sales_promotion_seq'"
+      changes:
+        - createSequence:
+            sequenceName: sales_promotion_seq
+            dataType: bigint
+            startValue: 1
+            incrementBy: 50
+            minValue: 1
+            maxValue: 9223372036854775807
+            cacheSize: 1
+            cycle: false
+
+  # Tabla intermedia Promocion <-> Libro (relacion ManyToMany propia)
+  - changeSet:
+      id: sales-006-create-promotion-book
+      author: sales-service
+      comment: Tabla intermedia sales_promotion_book (M2M Promotion-Book)
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.tables WHERE table_name = 'sales_promotion_book'"
+      changes:
+        - createTable:
+            tableName: sales_promotion_book
+            columns:
+              - column:
+                  name: promotion_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: book_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: sales_promotion_book
+            columnNames: promotion_id, book_id
+            constraintName: pk_sales_promotion_book
+
+  - changeSet:
+      id: sales-007-fks-promotion-book
+      author: sales-service
+      comment: FKs de sales_promotion_book hacia sales_promotion y book
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: sales_promotion_book
+        - tableExists:
+            tableName: sales_promotion
+        - tableExists:
+            tableName: book
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.table_constraints WHERE table_name = 'sales_promotion_book' AND constraint_name = 'fk_spb_promotion'"
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: sales_promotion_book
+            baseColumnNames: promotion_id
+            referencedTableName: sales_promotion
+            referencedColumnNames: id
+            constraintName: fk_spb_promotion
+            onDelete: CASCADE
+            validate: true
+        - addForeignKeyConstraint:
+            baseTableName: sales_promotion_book
+            baseColumnNames: book_id
+            referencedTableName: book
+            referencedColumnNames: id
+            constraintName: fk_spb_book
+            onDelete: CASCADE
+            validate: true

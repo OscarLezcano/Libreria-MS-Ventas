@@ -3,12 +3,12 @@
 <configuration>
 	<include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-	<springProperty scope="context" name="logPath" source="rents.log.path" defaultValue="logs"/>
-	<springProperty scope="context" name="logFile" source="rents.log.file" defaultValue="rents-service.log"/>
-	<springProperty scope="context" name="logPattern" source="rents.log.pattern" defaultValue="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{40} - %msg%n"/>
-	<springProperty scope="context" name="levelBigobooks" source="rents.log.level.com.bigobooks" defaultValue="INFO"/>
-	<springProperty scope="context" name="levelRepositories" source="rents.log.level.repositories" defaultValue="DEBUG"/>
-	<springProperty scope="context" name="levelSql" source="rents.log.level.sql" defaultValue="DEBUG"/>
+	<springProperty scope="context" name="logPath" source="sales.log.path" defaultValue="logs"/>
+	<springProperty scope="context" name="logFile" source="sales.log.file" defaultValue="sales-service.log"/>
+	<springProperty scope="context" name="logPattern" source="sales.log.pattern" defaultValue="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{40} - %msg%n"/>
+	<springProperty scope="context" name="levelBigobooks" source="sales.log.level.com.bigobooks" defaultValue="INFO"/>
+	<springProperty scope="context" name="levelRepositories" source="sales.log.level.repositories" defaultValue="DEBUG"/>
+	<springProperty scope="context" name="levelSql" source="sales.log.level.sql" defaultValue="DEBUG"/>
 
 	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>

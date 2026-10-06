@@ -27,6 +27,11 @@ public class GlobalExceptionHandler {
 		return build(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage(), request);
 	}
 
+	@ExceptionHandler(ConflictException.class)
+	public ResponseEntity<ApiErrorDto> handleConflict(ConflictException ex, HttpServletRequest request) {
+		return build(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
+	}
+
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<ApiErrorDto> handleBadRequest(IllegalArgumentException ex, HttpServletRequest request) {
 		return build(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(), request);

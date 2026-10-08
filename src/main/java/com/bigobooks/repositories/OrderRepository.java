@@ -1,5 +1,6 @@
 package com.bigobooks.repositories;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -23,4 +24,12 @@ public interface OrderRepository extends BaseRepository<Order>, JpaSpecification
 	@EntityGraph(attributePaths = "orderDetails")
 	@Override
 	Page<Order> findAll(Specification<Order> spec, Pageable pageable);
+
+	@Override
+	@Query(value = "SELECT * FROM orders", nativeQuery = true)
+	List<Order> findAllIncludingDeleted();
+
+	@Override
+	@Query(value = "SELECT * FROM orders WHERE is_deleted = true", nativeQuery = true)
+	List<Order> findDeleted();
 }

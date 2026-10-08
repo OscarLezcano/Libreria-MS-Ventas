@@ -14,13 +14,10 @@ import com.bigobooks.dto.OrderCreateRequest;
 import com.bigobooks.dto.OrderItemCreate;
 import com.bigobooks.dto.OrderUpdateRequest;
 import com.bigobooks.entities.auth.UserAccount;
-import com.bigobooks.entities.book.Book;
 import com.bigobooks.entities.orders.Order;
-import com.bigobooks.entities.orders.OrderDetail;
 import com.bigobooks.entities.orders.OrderStatus;
 import com.bigobooks.exception.ConflictException;
 import com.bigobooks.exception.NotFoundException;
-import com.bigobooks.repositories.OrderDetailRepository;
 import com.bigobooks.repositories.OrderRepository;
 import com.bigobooks.service.BaseService;
 import com.bigobooks.specifications.OrderSpecifications;
@@ -30,19 +27,17 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 
 	private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
-	private final OrderDetailRepository orderDetailRepository;
-	private final BookService bookService;
+	private final OrderDetailService orderDetailService;
 	private final UserAccountService userAccountService;
 	private final WarehouseService warehouseService;
 	private final StockService stockService;
 	private final OrderCouponService orderCouponService;
 
-	public OrderService(OrderRepository repository, OrderDetailRepository orderDetailRepository,
-			BookService bookService, UserAccountService userAccountService, WarehouseService warehouseService,
-			StockService stockService, OrderCouponService orderCouponService) {
+	public OrderService(OrderRepository repository, OrderDetailService orderDetailService,
+			UserAccountService userAccountService, WarehouseService warehouseService, StockService stockService,
+			OrderCouponService orderCouponService) {
 		super(repository);
-		this.orderDetailRepository = orderDetailRepository;
-		this.bookService = bookService;
+		this.orderDetailService = orderDetailService;
 		this.userAccountService = userAccountService;
 		this.warehouseService = warehouseService;
 		this.stockService = stockService;
@@ -73,7 +68,7 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		Order saved = getRepository().save(order);
 
 		for (OrderItemCreate item : request.getItems()) {
-			addDetail(saved, item);
+			orderDetailService.addDetailTo(saved, item);
 		}
 		orderCouponService.recalculate(saved);
 
@@ -180,29 +175,6 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		order.setDeleted(true);
 		getRepository().save(order);
 		log.info("Venta {} eliminada (borrado logico)", id);
-	}
-
-	private void addDetail(Order order, OrderItemCreate item) {
-		if (item == null || item.getBookId() == null || item.getQuantity() == null) {
-			throw new IllegalArgumentException("Cada item requiere bookId y quantity");
-		}
-		if (item.getQuantity() <= 0) {
-			throw new IllegalArgumentException("quantity debe ser mayor a 0");
-		}
-		Book book = bookService.requireById(item.getBookId());
-		if (book.getPrice() == null) {
-			throw new IllegalArgumentException("El libro " + book.getId() + " no tiene precio de venta definido");
-		}
-
-		OrderDetail detail = new OrderDetail();
-		detail.setOrder(order);
-		detail.setBookId(book.getId());
-		detail.setBookName(book.getTitle());
-		detail.setQuantity(item.getQuantity());
-		detail.setUnitPrice(book.getPrice());
-		detail.setDiscount(0L);
-		orderDetailRepository.save(detail);
-		order.getOrderDetails().add(detail);
 	}
 
 	private boolean isAllowedTransition(OrderStatus from, OrderStatus to) {

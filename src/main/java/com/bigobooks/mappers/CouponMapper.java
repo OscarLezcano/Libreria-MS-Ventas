@@ -23,4 +23,23 @@ public class CouponMapper {
 		dto.setCreatedAt(coupon.getCreatedAt());
 		return dto;
 	}
+
+	/**
+	 * DTO del common -> entidad. Las ordenes asociadas al cupon no se
+	 * resuelven aqui: las carga el servicio con su repositorio.
+	 */
+	public Coupon toEntity(CouponDto dto) {
+		if (dto == null) {
+			return null;
+		}
+		Coupon coupon = new Coupon();
+		coupon.setId(dto.getId());
+		coupon.setCode(dto.getCode());
+		if (dto.getDiscountPercent() != null) {
+			coupon.setDiscountPercent(dto.getDiscountPercent());
+		}
+		coupon.setValidUntil(dto.getValidUntil());
+		coupon.setCreatedAt(dto.getCreatedAt());
+		return coupon;
+	}
 }

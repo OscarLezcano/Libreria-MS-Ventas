@@ -53,13 +53,15 @@ class OrderServiceTest {
 	private CouponService couponService;
 
 	private OrderCouponService orderCouponService;
+	private OrderDetailService orderDetailService;
 	private OrderService orderService;
 
 	@BeforeEach
 	void setUp() {
 		orderCouponService = new OrderCouponService(couponService);
-		orderService = new OrderService(repository, orderDetailRepository, bookService, userAccountService,
-				warehouseService, stockService, orderCouponService);
+		orderDetailService = new OrderDetailService(orderDetailRepository, bookService);
+		orderService = new OrderService(repository, orderDetailService, userAccountService, warehouseService,
+				stockService, orderCouponService);
 	}
 
 	@Test

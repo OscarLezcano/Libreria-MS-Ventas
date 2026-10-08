@@ -40,6 +40,12 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>3.1.0</version>
 		</dependency>
+		<!-- Migraciones propias de este servicio (db.changelog-sales.yaml).
+			Sin este starter las propiedades spring.liquibase.* se ignoran. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-liquibase</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>

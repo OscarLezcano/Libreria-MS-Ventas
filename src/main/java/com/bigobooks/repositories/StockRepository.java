@@ -1,5 +1,6 @@
 package com.bigobooks.repositories;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Modifying;
@@ -21,4 +22,12 @@ public interface StockRepository extends BaseRepository<Stock> {
 	@Modifying(clearAutomatically = true)
 	@Query("update Stock s set s.quantity = s.quantity + :quantity where s.id = :id")
 	int increaseQuantity(@Param("id") Long id, @Param("quantity") int quantity);
+
+	@Override
+	@Query(value = "SELECT * FROM stock", nativeQuery = true)
+	List<Stock> findAllIncludingDeleted();
+
+	@Override
+	@Query(value = "SELECT * FROM stock WHERE is_deleted = true", nativeQuery = true)
+	List<Stock> findDeleted();
 }

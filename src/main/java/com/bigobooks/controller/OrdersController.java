@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.bigobooks.dto.OrderCouponApply;
 import com.bigobooks.dto.OrderCreateRequest;
 import com.bigobooks.dto.OrderDto;
 import com.bigobooks.dto.OrderStatusChange;
@@ -70,20 +69,6 @@ public class OrdersController implements OrdersApi {
 		OrderStatusChange.StatusEnum status = orderStatusChange == null ? null : orderStatusChange.getStatus();
 		OrderStatus newStatus = status == null ? null : OrderStatus.valueOf(status.name());
 		return ResponseEntity.ok(orderMapper.toDto(orderService.changeStatus(id, newStatus)));
-	}
-
-	@Override
-	public ResponseEntity<OrderDto> applyCouponToOrder(Long id, OrderCouponApply orderCouponApply) {
-		log.info("POST /orders/{}/coupons: aplicar cupon recibido", id);
-		String couponCode = orderCouponApply == null ? null : orderCouponApply.getCouponCode();
-		return ResponseEntity.ok(orderMapper.toDto(orderService.applyCoupon(id, couponCode)));
-	}
-
-	@Override
-	public ResponseEntity<Void> removeCouponFromOrder(Long id) {
-		log.info("DELETE /orders/{}/coupons: quitar cupon recibido", id);
-		orderService.removeCoupon(id);
-		return ResponseEntity.noContent().build();
 	}
 
 	@Override

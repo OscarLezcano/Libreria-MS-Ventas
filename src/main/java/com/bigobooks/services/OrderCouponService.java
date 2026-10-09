@@ -47,15 +47,6 @@ public class OrderCouponService {
 	}
 
 	/**
-	 * Quita el cupon de la venta y recalcula el total.
-	 */
-	public void removeCoupon(Order order) {
-		order.setCoupon(null);
-		recalculate(order);
-		log.debug("Cupon quitado de la venta {}", order.getId());
-	}
-
-	/**
 	 * Recalcula subtotal, descuento y total de la venta.
 	 */
 	public void recalculate(Order order) {

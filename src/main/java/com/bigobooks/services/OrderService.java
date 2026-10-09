@@ -139,27 +139,6 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		return saved;
 	}
 
-	@Transactional
-	public Order applyCoupon(Long id, String couponCode) {
-		Order order = requireById(id);
-		orderCouponService.applyCoupon(order, couponCode);
-		Order saved = getRepository().save(order);
-		log.info("Cupon aplicado a la venta {}: total={}", saved.getId(), saved.getTotalPrice());
-		return saved;
-	}
-
-	@Transactional
-	public Order removeCoupon(Long id) {
-		Order order = requireById(id);
-		if (order.getCoupon() == null) {
-			throw new IllegalArgumentException("La venta no tiene cupon aplicado");
-		}
-		orderCouponService.removeCoupon(order);
-		Order saved = getRepository().save(order);
-		log.info("Cupon quitado de la venta {}: total={}", saved.getId(), saved.getTotalPrice());
-		return saved;
-	}
-
 	public Page<Order> list(String status, Long warehouseId, String couponCode, Long bookId, LocalDateTime createdFrom,
 			LocalDateTime createdTo, Integer page, Integer size, String sort) {
 		Page<Order> result = getRepository().findAll(

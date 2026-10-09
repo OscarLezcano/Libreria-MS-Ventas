@@ -2,7 +2,6 @@ package com.bigobooks.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -188,49 +187,6 @@ class OrderServiceTest {
 		assertThrows(ConflictException.class, () -> orderService.changeStatus(1L, OrderStatus.PAID));
 		verify(stockService, never()).decreaseStock(any());
 		verify(repository, never()).save(any());
-	}
-
-	@Test
-	void applyCouponRecalculaElTotal() {
-		Order order = orderWithDetail(OrderStatus.PENDING);
-		when(repository.findByIdWithDetails(1L)).thenReturn(Optional.of(order));
-		when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-		Coupon coupon = new Coupon();
-		coupon.setId(9L);
-		coupon.setCode("VERANO");
-		coupon.setDiscountPercent(10);
-		when(couponService.requireByCode("VERANO")).thenReturn(coupon);
-
-		Order result = orderService.applyCoupon(1L, "VERANO");
-
-		assertEquals(coupon, result.getCoupon());
-		assertEquals(100L, result.getDiscountAmount());
-		assertEquals(900L, result.getTotalPrice());
-	}
-
-	@Test
-	void applyCouponRechazaSiLaVentaNoEstaPendiente() {
-		Order order = orderWithDetail(OrderStatus.PAID);
-		when(repository.findByIdWithDetails(1L)).thenReturn(Optional.of(order));
-
-		assertThrows(ConflictException.class, () -> orderService.applyCoupon(1L, "VERANO"));
-		verify(couponService, never()).requireByCode(any());
-	}
-
-	@Test
-	void removeCouponRecalculaElTotal() {
-		Order order = orderWithDetail(OrderStatus.PENDING);
-		Coupon coupon = new Coupon();
-		coupon.setDiscountPercent(50);
-		order.setCoupon(coupon);
-		when(repository.findByIdWithDetails(1L)).thenReturn(Optional.of(order));
-		when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-		Order result = orderService.removeCoupon(1L);
-
-		assertNull(result.getCoupon());
-		assertEquals(0L, result.getDiscountAmount());
-		assertEquals(1000L, result.getTotalPrice());
 	}
 
 	@Test

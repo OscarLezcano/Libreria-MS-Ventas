@@ -1,6 +1,7 @@
 package com.bigobooks.repositories;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 
@@ -8,6 +9,8 @@ import com.bigobooks.entities.auth.UserAccount;
 import com.bigobooks.repository.BaseRepository;
 
 public interface UserAccountRepository extends BaseRepository<UserAccount> {
+
+	Optional<UserAccount> findByEmailIgnoreCase(String email);
 
 	@Override
 	@Query(value = "SELECT * FROM user_account", nativeQuery = true)

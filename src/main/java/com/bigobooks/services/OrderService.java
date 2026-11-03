@@ -76,6 +76,9 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		order.setStatus(OrderStatus.PENDING);
 		order.setWarehouseId(request.getWarehouseId());
 		order.setUserAccount(user);
+		order.setInvoiceBusinessName(request.getInvoiceBusinessName());
+		order.setInvoiceName(request.getInvoiceName());
+		order.setInvoiceLastName(request.getInvoiceLastName());
 		order.setOrderDetails(new ArrayList<>());
 		Order saved = getRepository().save(order);
 
@@ -117,6 +120,15 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		}
 		if (request.getInvoiceNumber() != null) {
 			order.setInvoiceNumber(request.getInvoiceNumber());
+		}
+		if (request.getInvoiceBusinessName() != null) {
+			order.setInvoiceBusinessName(request.getInvoiceBusinessName());
+		}
+		if (request.getInvoiceName() != null) {
+			order.setInvoiceName(request.getInvoiceName());
+		}
+		if (request.getInvoiceLastName() != null) {
+			order.setInvoiceLastName(request.getInvoiceLastName());
 		}
 		Order saved = getRepository().save(order);
 		log.info("Venta {} actualizada", saved.getId());

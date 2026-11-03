@@ -24,6 +24,7 @@ public class OrderMapper {
 		}
 		OrderDto dto = new OrderDto();
 		dto.setId(order.getId());
+		dto.setOrderNumber(order.getOrderNumber());
 		dto.setWarehouseId(order.getWarehouseId());
 		dto.setUserId(order.getUserAccount() != null ? order.getUserAccount().getId() : null);
 		dto.setStatus(order.getStatus() != null ? OrderDto.StatusEnum.valueOf(order.getStatus().name()) : null);
@@ -32,6 +33,9 @@ public class OrderMapper {
 		dto.setDiscountAmount(order.getDiscountAmount());
 		dto.setBancardNumber(order.getBancardNumber());
 		dto.setInvoiceNumber(order.getInvoiceNumber());
+		dto.setInvoiceBusinessName(order.getInvoiceBusinessName());
+		dto.setInvoiceName(order.getInvoiceName());
+		dto.setInvoiceLastName(order.getInvoiceLastName());
 		dto.setCreatedAt(order.getCreatedAt());
 		dto.setCouponId(order.getCoupon() != null ? order.getCoupon().getId() : null);
 

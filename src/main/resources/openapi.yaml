@@ -763,6 +763,15 @@ components:
         couponCode:
           type: string
           description: Codigo de cupon opcional para aplicar al total
+        invoiceBusinessName:
+          type: string
+          description: Razon social para la factura
+        invoiceName:
+          type: string
+          description: Nombre para la factura
+        invoiceLastName:
+          type: string
+          description: Apellido para la factura
         items:
           type: array
           items:
@@ -797,6 +806,15 @@ components:
           type: string
         invoiceNumber:
           type: string
+        invoiceBusinessName:
+          type: string
+          description: Nueva razon social para la factura
+        invoiceName:
+          type: string
+          description: Nuevo nombre para la factura
+        invoiceLastName:
+          type: string
+          description: Nuevo apellido para la factura
     OrderStatusChange:
       type: object
       properties:
@@ -910,6 +928,10 @@ components:
         id:
           type: integer
           format: int64
+        orderNumber:
+          type: string
+          readOnly: true
+          description: Numero publico del pedido, diferente del id interno
         warehouseId:
           type: integer
           format: int64
@@ -932,6 +954,15 @@ components:
           type: string
         invoiceNumber:
           type: string
+        invoiceBusinessName:
+          type: string
+          description: Razon social para la factura
+        invoiceName:
+          type: string
+          description: Nombre para la factura
+        invoiceLastName:
+          type: string
+          description: Apellido para la factura
         createdAt:
           type: string
           format: date-time

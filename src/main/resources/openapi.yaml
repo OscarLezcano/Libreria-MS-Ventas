@@ -746,9 +746,15 @@ components:
         createdAt:
           type: string
           format: date-time
-        roleId:
-          type: integer
-          format: int64
+        roleIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        roleNames:
+          type: array
+          items:
+            type: string
     OrderCreateRequest:
       type: object
       properties:

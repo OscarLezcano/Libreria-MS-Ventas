@@ -279,7 +279,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /orders/{id}/status:
-    put:
+    patch:
       tags: [orders]
       operationId: changeOrderStatus
       summary: Cambia el estado de una venta (transiciones validas)
@@ -775,11 +775,17 @@ components:
         invoiceLastName:
           type: string
           description: Apellido para la factura
+        invoiceRuc:
+          type: string
+          description: RUC del comprador para la factura personal
         items:
           type: array
           items:
             $ref: '#/components/schemas/OrderItemCreate'
       required:
+        - invoiceRuc
+        - invoiceName
+        - invoiceLastName
         - items
     OrderItemCreate:
       type: object
@@ -815,6 +821,9 @@ components:
         invoiceLastName:
           type: string
           description: Nuevo apellido para la factura
+        invoiceRuc:
+          type: string
+          description: Nuevo RUC del comprador para la factura personal
     OrderStatusChange:
       type: object
       properties:
@@ -960,6 +969,9 @@ components:
         invoiceLastName:
           type: string
           description: Apellido para la factura
+        invoiceRuc:
+          type: string
+          description: RUC del comprador para la factura personal
         createdAt:
           type: string
           format: date-time

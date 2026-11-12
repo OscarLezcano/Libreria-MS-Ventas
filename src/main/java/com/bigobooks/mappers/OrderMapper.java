@@ -33,7 +33,7 @@ public class OrderMapper {
 		dto.setDiscountAmount(order.getDiscountAmount());
 		dto.setBancardNumber(order.getBancardNumber());
 		dto.setInvoiceNumber(order.getInvoiceNumber());
-		dto.setInvoiceBusinessName(order.getInvoiceBusinessName());
+		dto.setInvoiceRuc(order.getInvoiceRuc());
 		dto.setInvoiceName(order.getInvoiceName());
 		dto.setInvoiceLastName(order.getInvoiceLastName());
 		dto.setCreatedAt(order.getCreatedAt());

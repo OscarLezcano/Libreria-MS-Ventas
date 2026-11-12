@@ -76,10 +76,13 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		order.setStatus(OrderStatus.PENDING);
 		order.setWarehouseId(request.getWarehouseId());
 		order.setUserAccount(user);
+		validateInvoiceData(request);
 		order.setInvoiceName(request.getInvoiceName());
 		order.setInvoiceLastName(request.getInvoiceLastName());
+		order.setInvoiceRuc(request.getInvoiceRuc());
 		order.setOrderDetails(new ArrayList<>());
 		Order saved = getRepository().save(order);
+		saved.setInvoiceNumber(formatInvoiceNumber(saved.getId()));
 
 		for (OrderItemCreate item : request.getItems()) {
 			orderDetailService.addDetailTo(saved, item);
@@ -119,6 +122,9 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		}
 		if (request.getInvoiceNumber() != null) {
 			order.setInvoiceNumber(request.getInvoiceNumber());
+		}
+		if (request.getInvoiceRuc() != null) {
+			order.setInvoiceRuc(request.getInvoiceRuc());
 		}
 		if (request.getInvoiceName() != null) {
 			order.setInvoiceName(request.getInvoiceName());
@@ -194,6 +200,10 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		};
 	}
 
+	private boolean isBlank(String value) {
+		return value == null || value.isBlank();
+	}
+
 	private OrderStatus parseStatus(String status) {
 		if (status == null || status.isBlank()) {
 			return null;
@@ -203,5 +213,16 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		} catch (IllegalArgumentException e) {
 			throw new IllegalArgumentException("Estado invalido: " + status);
 		}
+	}
+
+	private void validateInvoiceData(OrderCreateRequest request) {
+		if (isBlank(request.getInvoiceName()) || isBlank(request.getInvoiceLastName())
+				|| isBlank(request.getInvoiceRuc())) {
+			throw new IllegalArgumentException("La factura requiere RUC, nombre y apellido");
+		}
+	}
+
+	private String formatInvoiceNumber(Long orderId) {
+		return String.format("001-001-%08d", orderId);
 	}
 }

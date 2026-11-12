@@ -22,7 +22,7 @@ class OrderMapperTest {
 
 		assertEquals(Long.valueOf(15), dto.getId());
 		assertEquals("PED-TEST-15", dto.getOrderNumber());
-		assertEquals("BigoBooks S.A.", dto.getInvoiceBusinessName());
+		assertEquals("8001234-5", dto.getInvoiceRuc());
 		assertEquals("Ana", dto.getInvoiceName());
 		assertEquals("Gomez", dto.getInvoiceLastName());
 		assertEquals(List.of(101L), dto.getOrderDetailIds());
@@ -46,7 +46,7 @@ class OrderMapperTest {
 		order.setId(15L);
 		order.setOrderNumber("PED-TEST-15");
 		order.setStatus(OrderStatus.PENDING);
-		order.setInvoiceBusinessName("BigoBooks S.A.");
+		order.setInvoiceRuc("8001234-5");
 		order.setInvoiceName("Ana");
 		order.setInvoiceLastName("Gomez");
 

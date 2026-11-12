@@ -242,3 +242,22 @@ databaseChangeLog:
             tableName: orders
             columnNames: order_number
             constraintName: uk_orders_order_number
+
+  - changeSet:
+      id: sales-009-order-invoice-ruc
+      author: sales-service
+      comment: RUC personal del comprador
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: orders
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'invoice_ruc'"
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: invoice_ruc
+                  type: VARCHAR(20)

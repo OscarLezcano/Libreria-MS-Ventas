@@ -261,3 +261,22 @@ databaseChangeLog:
               - column:
                   name: invoice_ruc
                   type: VARCHAR(20)
+
+  - changeSet:
+      id: sales-010-order-invoice-phone
+      author: sales-service
+      comment: Telefono normalizado del comprador
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: orders
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'invoice_phone'"
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: invoice_phone
+                  type: VARCHAR(20)

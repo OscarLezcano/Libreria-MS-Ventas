@@ -36,6 +36,7 @@ public class OrderMapper {
 		dto.setInvoiceRuc(order.getInvoiceRuc());
 		dto.setInvoiceName(order.getInvoiceName());
 		dto.setInvoiceLastName(order.getInvoiceLastName());
+		dto.setInvoicePhone(order.getInvoicePhone());
 		dto.setCreatedAt(order.getCreatedAt());
 		dto.setCouponId(order.getCoupon() != null ? order.getCoupon().getId() : null);
 

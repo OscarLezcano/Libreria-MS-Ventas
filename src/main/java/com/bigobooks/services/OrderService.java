@@ -3,6 +3,7 @@ package com.bigobooks.services;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,12 +78,12 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		order.setWarehouseId(request.getWarehouseId());
 		order.setUserAccount(user);
 		validateInvoiceData(request);
-		order.setInvoiceName(request.getInvoiceName());
-		order.setInvoiceLastName(request.getInvoiceLastName());
-		order.setInvoiceRuc(request.getInvoiceRuc());
+		order.setInvoiceName(normalizeText(request.getInvoiceName()));
+		order.setInvoiceLastName(normalizeText(request.getInvoiceLastName()));
+		order.setInvoiceRuc(normalizeDocument(request.getInvoiceRuc()));
+		order.setInvoicePhone(normalizePhone(request.getInvoicePhone()));
 		order.setOrderDetails(new ArrayList<>());
 		Order saved = getRepository().save(order);
-		saved.setInvoiceNumber(formatInvoiceNumber(saved.getId()));
 
 		for (OrderItemCreate item : request.getItems()) {
 			orderDetailService.addDetailTo(saved, item);
@@ -124,13 +125,16 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 			order.setInvoiceNumber(request.getInvoiceNumber());
 		}
 		if (request.getInvoiceRuc() != null) {
-			order.setInvoiceRuc(request.getInvoiceRuc());
+			order.setInvoiceRuc(normalizeDocument(request.getInvoiceRuc()));
 		}
 		if (request.getInvoiceName() != null) {
 			order.setInvoiceName(request.getInvoiceName());
 		}
 		if (request.getInvoiceLastName() != null) {
-			order.setInvoiceLastName(request.getInvoiceLastName());
+			order.setInvoiceLastName(normalizeText(request.getInvoiceLastName()));
+		}
+		if (request.getInvoicePhone() != null) {
+			order.setInvoicePhone(normalizePhone(request.getInvoicePhone()));
 		}
 		Order saved = getRepository().save(order);
 		log.info("Venta {} actualizada", saved.getId());
@@ -158,6 +162,9 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		}
 		if (newStatus == OrderStatus.PAID) {
 			stockService.decreaseStock(order);
+			if (isBlank(order.getInvoiceNumber())) {
+				order.setInvoiceNumber(formatInvoiceNumber(order.getId()));
+			}
 		} else if (newStatus == OrderStatus.REFUNDED) {
 			stockService.restoreStock(order);
 		}
@@ -217,12 +224,35 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 
 	private void validateInvoiceData(OrderCreateRequest request) {
 		if (isBlank(request.getInvoiceName()) || isBlank(request.getInvoiceLastName())
-				|| isBlank(request.getInvoiceRuc())) {
-			throw new IllegalArgumentException("La factura requiere RUC, nombre y apellido");
+				|| isBlank(request.getInvoiceRuc()) || isBlank(request.getInvoicePhone())) {
+			throw new IllegalArgumentException("La factura requiere RUC, nombre, apellido y telefono");
 		}
+		if (!request.getInvoiceRuc().trim().matches("[0-9]{5,15}(-[0-9Kk])?")) {
+			throw new IllegalArgumentException("El RUC o CI no tiene un formato valido");
+		}
+		normalizePhone(request.getInvoicePhone());
 	}
 
 	private String formatInvoiceNumber(Long orderId) {
 		return String.format("001-001-%08d", orderId);
+	}
+
+	private String normalizeText(String value) {
+		return value.trim().replaceAll("\\s+", " ");
+	}
+
+	private String normalizeDocument(String value) {
+		return value.trim().replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
+	}
+
+	private String normalizePhone(String value) {
+		String compact = value.trim().replaceAll("[\\s().-]", "");
+		if (compact.matches("09[0-9]{8}")) {
+			return "+595" + compact.substring(1);
+		}
+		if (compact.matches("\\+5959[0-9]{8}")) {
+			return compact;
+		}
+		throw new IllegalArgumentException("El telefono debe tener formato 0999999999 o +595 999999999");
 	}
 }

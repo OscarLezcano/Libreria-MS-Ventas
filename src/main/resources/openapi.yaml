@@ -778,6 +778,9 @@ components:
         invoiceRuc:
           type: string
           description: RUC del comprador para la factura personal
+        invoicePhone:
+          type: string
+          description: Telefono del comprador
         items:
           type: array
           items:
@@ -786,6 +789,7 @@ components:
         - invoiceRuc
         - invoiceName
         - invoiceLastName
+        - invoicePhone
         - items
     OrderItemCreate:
       type: object
@@ -824,6 +828,9 @@ components:
         invoiceRuc:
           type: string
           description: Nuevo RUC del comprador para la factura personal
+        invoicePhone:
+          type: string
+          description: Nuevo telefono del comprador
     OrderStatusChange:
       type: object
       properties:
@@ -972,6 +979,9 @@ components:
         invoiceRuc:
           type: string
           description: RUC del comprador para la factura personal
+        invoicePhone:
+          type: string
+          description: Telefono del comprador normalizado
         createdAt:
           type: string
           format: date-time

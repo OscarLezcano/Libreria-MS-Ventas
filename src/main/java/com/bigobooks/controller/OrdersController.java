@@ -2,6 +2,7 @@ package com.bigobooks.controller;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import com.bigobooks.dto.Envelope;
 import com.bigobooks.dto.OrderCreateRequest;
@@ -22,6 +25,7 @@ import com.bigobooks.mappers.OrderMapper;
 import com.bigobooks.security.CurrentUser;
 import com.bigobooks.services.OrderQueryService;
 import com.bigobooks.services.OrderService;
+import com.bigobooks.services.BookService;
 import com.bigobooks.util.Envelopes;
 
 /**
@@ -36,13 +40,56 @@ public class OrdersController implements OrdersApi {
 	private final OrderQueryService orderQueryService;
 	private final OrderMapper orderMapper;
 	private final CurrentUser currentUser;
+	private final BookService bookService;
 
 	public OrdersController(OrderService orderService, OrderQueryService orderQueryService, OrderMapper orderMapper,
-			CurrentUser currentUser) {
+			CurrentUser currentUser, BookService bookService) {
 		this.orderService = orderService;
 		this.orderQueryService = orderQueryService;
 		this.orderMapper = orderMapper;
 		this.currentUser = currentUser;
+		this.bookService = bookService;
+	}
+
+	@GetMapping("/transaction-demo/direct/{propagation}")
+	@PreAuthorize("@roles.allows('orders-view')")
+	public ResponseEntity<Map<String, String>> transactionDirect(@PathVariable String propagation) {
+		return ResponseEntity.ok(Map.of("mode", "direct", "result", invokeDirect(propagation)));
+	}
+
+	@GetMapping("/transaction-demo/from-parent/{propagation}")
+	@PreAuthorize("@roles.allows('orders-view')")
+	public ResponseEntity<Map<String, String>> transactionFromParent(@PathVariable String propagation) {
+		return ResponseEntity.ok(Map.of("mode", "from-parent", "result",
+				invokeFromParent(propagation)));
+	}
+
+	private String invokeDirect(String propagation) {
+		try {
+			return switch (propagation.trim().toUpperCase()) {
+			case "REQUIRED" -> bookService.transactionRequired();
+			case "REQUIRES_NEW" -> bookService.transactionRequiresNew();
+			case "SUPPORTS" -> bookService.transactionSupports();
+			case "NOT_SUPPORTED" -> bookService.transactionNotSupported();
+			case "NEVER" -> bookService.transactionNever();
+			case "MANDATORY" -> bookService.transactionMandatory();
+			default -> throw new IllegalArgumentException("Propagacion no soportada: " + propagation);
+			};
+		} catch (RuntimeException exception) {
+			log.info("TX-DEMO {} mode=direct exception={}", propagation,
+					exception.getClass().getSimpleName());
+			return "EXCEPTION " + exception.getClass().getSimpleName();
+		}
+	}
+
+	private String invokeFromParent(String propagation) {
+		try {
+			return orderService.transactionPropagationDemo(propagation);
+		} catch (RuntimeException exception) {
+			log.info("TX-DEMO {} mode=from-parent exception={}", propagation,
+					exception.getClass().getSimpleName());
+			return "EXCEPTION " + exception.getClass().getSimpleName();
+		}
 	}
 
 	@Override

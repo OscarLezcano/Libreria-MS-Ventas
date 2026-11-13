@@ -37,22 +37,37 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	private final WarehouseService warehouseService;
 	private final StockService stockService;
 	private final OrderCouponService orderCouponService;
+	private final BookService bookService;
 
 	public OrderService(OrderRepository repository, OrderDetailService orderDetailService,
 			UserAccountService userAccountService, WarehouseService warehouseService, StockService stockService,
-			OrderCouponService orderCouponService) {
+			OrderCouponService orderCouponService, BookService bookService) {
 		super(repository);
 		this.orderDetailService = orderDetailService;
 		this.userAccountService = userAccountService;
 		this.warehouseService = warehouseService;
 		this.stockService = stockService;
 		this.orderCouponService = orderCouponService;
+		this.bookService = bookService;
 	}
 
 	/** Venta con sus detalles ya cargados. */
 	public Order requireById(Long id) {
 		return getRepository().findByIdWithDetails(id)
 				.orElseThrow(() -> NotFoundException.byId(ResourceType.ORDER, id));
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED)
+	public String transactionPropagationDemo(String propagation) {
+		return switch (propagation.trim().toUpperCase()) {
+		case "REQUIRED" -> bookService.transactionRequired();
+		case "REQUIRES_NEW" -> bookService.transactionRequiresNew();
+		case "SUPPORTS" -> bookService.transactionSupports();
+		case "NOT_SUPPORTED" -> bookService.transactionNotSupported();
+		case "NEVER" -> bookService.transactionNever();
+		case "MANDATORY" -> bookService.transactionMandatory();
+		default -> throw new IllegalArgumentException("Propagacion no soportada: " + propagation);
+		};
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED)

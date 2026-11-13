@@ -11,8 +11,9 @@ import com.bigobooks.cache.CacheNames;
 import com.bigobooks.dto.CouponCreateRequest;
 import com.bigobooks.dto.CouponUpdateRequest;
 import com.bigobooks.entities.orders.Coupon;
-import com.bigobooks.exception.ConflictException;
-import com.bigobooks.exception.NotFoundException;
+import com.bigobooks.util.exception.ConflictException;
+import com.bigobooks.util.exception.NotFoundException;
+import com.bigobooks.util.exception.ResourceType;
 import com.bigobooks.repositories.CouponRepository;
 import com.bigobooks.service.BaseService;
 import com.bigobooks.specifications.CouponSpecifications;
@@ -27,12 +28,12 @@ public class CouponService extends BaseService<Coupon, CouponRepository> {
 	}
 
 	public Coupon requireById(Long id) {
-		return findById(id).orElseThrow(() -> new NotFoundException("No existe el cupon con id " + id));
+		return findById(id).orElseThrow(() -> NotFoundException.byId(ResourceType.COUPON, id));
 	}
 
 	public Coupon requireByCode(String code) {
 		return getRepository().findByCode(code.trim())
-				.orElseThrow(() -> new NotFoundException("No existe el cupon con codigo " + code));
+				.orElseThrow(() -> NotFoundException.byCode(ResourceType.COUPON, code));
 	}
 
 	@Transactional

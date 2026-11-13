@@ -3,12 +3,13 @@ package com.bigobooks.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bigobooks.entities.orders.Order;
 import com.bigobooks.entities.orders.OrderDetail;
 import com.bigobooks.entities.stock.Stock;
-import com.bigobooks.exception.ConflictException;
+import com.bigobooks.util.exception.ConflictException;
 import com.bigobooks.repositories.StockRepository;
 import com.bigobooks.service.BaseService;
 
@@ -29,7 +30,7 @@ public class StockService extends BaseService<Stock, StockRepository> {
 	/**
 	 * Descuenta el stock de cada detalle al confirmar el pago (PAID).
 	 */
-	@Transactional
+	@Transactional(propagation = Propagation.MANDATORY)
 	public void decreaseStock(Order order) {
 		Long warehouseId = order.getWarehouseId();
 		if (warehouseId == null) {
@@ -50,7 +51,7 @@ public class StockService extends BaseService<Stock, StockRepository> {
 	/**
 	 * Devuelve el stock de cada detalle al reembolsar (REFUNDED).
 	 */
-	@Transactional
+	@Transactional(propagation = Propagation.MANDATORY)
 	public void restoreStock(Order order) {
 		Long warehouseId = order.getWarehouseId();
 		if (warehouseId == null) {

@@ -3,7 +3,8 @@ package com.bigobooks.services;
 import org.springframework.stereotype.Service;
 
 import com.bigobooks.entities.auth.UserAccount;
-import com.bigobooks.exception.NotFoundException;
+import com.bigobooks.util.exception.NotFoundException;
+import com.bigobooks.util.exception.ResourceType;
 import com.bigobooks.repositories.UserAccountRepository;
 import com.bigobooks.service.BaseService;
 
@@ -18,6 +19,6 @@ public class UserAccountService extends BaseService<UserAccount, UserAccountRepo
 	}
 
 	public UserAccount requireById(Long id) {
-		return findById(id).orElseThrow(() -> new NotFoundException("No existe el usuario con id " + id));
+		return findById(id).orElseThrow(() -> NotFoundException.byId(ResourceType.USER, id));
 	}
 }

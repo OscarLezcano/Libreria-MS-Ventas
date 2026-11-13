@@ -26,13 +26,16 @@ public final class OrderSpecifications {
 	private OrderSpecifications() {
 	}
 
-	public static Specification<Order> build(OrderStatus status, Long warehouseId, String couponCode, Long bookId,
-			LocalDateTime createdFrom, LocalDateTime createdTo) {
+	public static Specification<Order> build(OrderStatus status, Long userId, Long warehouseId, String couponCode,
+			Long bookId, LocalDateTime createdFrom, LocalDateTime createdTo) {
 		return (Root<Order> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
 			if (status != null) {
 				predicates.add(cb.equal(root.get("status"), status));
+			}
+			if (userId != null) {
+				predicates.add(cb.equal(root.get("userAccount").get("id"), userId));
 			}
 			if (warehouseId != null) {
 				predicates.add(cb.equal(root.get("warehouseId"), warehouseId));

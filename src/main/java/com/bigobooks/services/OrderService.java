@@ -3,6 +3,7 @@ package com.bigobooks.services;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import com.bigobooks.cache.CacheNames;
 import com.bigobooks.dto.OrderCreateRequest;
@@ -18,8 +20,9 @@ import com.bigobooks.dto.OrderUpdateRequest;
 import com.bigobooks.entities.auth.UserAccount;
 import com.bigobooks.entities.orders.Order;
 import com.bigobooks.entities.orders.OrderStatus;
-import com.bigobooks.exception.ConflictException;
-import com.bigobooks.exception.NotFoundException;
+import com.bigobooks.util.exception.ConflictException;
+import com.bigobooks.util.exception.NotFoundException;
+import com.bigobooks.util.exception.ResourceType;
 import com.bigobooks.repositories.OrderRepository;
 import com.bigobooks.service.BaseService;
 import com.bigobooks.specifications.OrderSpecifications;
@@ -34,38 +37,67 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	private final WarehouseService warehouseService;
 	private final StockService stockService;
 	private final OrderCouponService orderCouponService;
+	private final BookService bookService;
 
 	public OrderService(OrderRepository repository, OrderDetailService orderDetailService,
 			UserAccountService userAccountService, WarehouseService warehouseService, StockService stockService,
-			OrderCouponService orderCouponService) {
+			OrderCouponService orderCouponService, BookService bookService) {
 		super(repository);
 		this.orderDetailService = orderDetailService;
 		this.userAccountService = userAccountService;
 		this.warehouseService = warehouseService;
 		this.stockService = stockService;
 		this.orderCouponService = orderCouponService;
+		this.bookService = bookService;
 	}
 
 	/** Venta con sus detalles ya cargados. */
 	public Order requireById(Long id) {
 		return getRepository().findByIdWithDetails(id)
-				.orElseThrow(() -> new NotFoundException("No existe la venta con id " + id));
+				.orElseThrow(() -> NotFoundException.byId(ResourceType.ORDER, id));
 	}
 
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRED)
+	public String transactionPropagationDemo(String propagation) {
+		return switch (propagation.trim().toUpperCase()) {
+		case "REQUIRED" -> bookService.transactionRequired();
+		case "REQUIRES_NEW" -> bookService.transactionRequiresNew();
+		case "SUPPORTS" -> bookService.transactionSupports();
+		case "NOT_SUPPORTED" -> bookService.transactionNotSupported();
+		case "NEVER" -> bookService.transactionNever();
+		case "MANDATORY" -> bookService.transactionMandatory();
+		default -> throw new IllegalArgumentException("Propagacion no soportada: " + propagation);
+		};
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED)
 	public Order createFromRequest(OrderCreateRequest request) {
+		return createFromRequest(request, request != null ? request.getUserId() : null);
+	}
+
+	/**
+	 * Crea la venta con el usuario indicado. El controlador resuelve el usuario
+	 * autenticado (claim uid) cuando el request no trae userId.
+	 */
+	@Transactional(propagation = Propagation.REQUIRED)
+	public Order createFromRequest(OrderCreateRequest request, Long userId) {
 		if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
 			throw new IllegalArgumentException("Debe incluir al menos un item en la venta");
 		}
 		if (request.getWarehouseId() != null) {
 			warehouseService.requireById(request.getWarehouseId());
 		}
-		UserAccount user = request.getUserId() != null ? userAccountService.requireById(request.getUserId()) : null;
+		UserAccount user = userId != null ? userAccountService.requireById(userId) : null;
 
 		Order order = new Order();
 		order.setStatus(OrderStatus.PENDING);
 		order.setWarehouseId(request.getWarehouseId());
 		order.setUserAccount(user);
+		validateInvoiceData(request);
+		order.setInvoiceName(normalizeText(request.getInvoiceName()));
+		order.setInvoiceLastName(normalizeText(request.getInvoiceLastName()));
+		order.setInvoiceRuc(normalizeDocument(request.getInvoiceRuc()));
+		order.setInvoicePhone(normalizePhone(request.getInvoicePhone()));
 		order.setOrderDetails(new ArrayList<>());
 		Order saved = getRepository().save(order);
 
@@ -86,7 +118,7 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	}
 
 	@CacheEvict(cacheNames = CacheNames.ORDERS, key = "#id")
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRED)
 	public Order update(Long id, OrderUpdateRequest request) {
 		if (request == null) {
 			throw new IllegalArgumentException("Debe indicar los datos de la venta");
@@ -108,6 +140,18 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		if (request.getInvoiceNumber() != null) {
 			order.setInvoiceNumber(request.getInvoiceNumber());
 		}
+		if (request.getInvoiceRuc() != null) {
+			order.setInvoiceRuc(normalizeDocument(request.getInvoiceRuc()));
+		}
+		if (request.getInvoiceName() != null) {
+			order.setInvoiceName(request.getInvoiceName());
+		}
+		if (request.getInvoiceLastName() != null) {
+			order.setInvoiceLastName(normalizeText(request.getInvoiceLastName()));
+		}
+		if (request.getInvoicePhone() != null) {
+			order.setInvoicePhone(normalizePhone(request.getInvoicePhone()));
+		}
 		Order saved = getRepository().save(order);
 		log.info("Venta {} actualizada", saved.getId());
 		return saved;
@@ -119,7 +163,7 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	 * reembolso lo devuelve.
 	 */
 	@CacheEvict(cacheNames = CacheNames.ORDERS, key = "#id")
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRED)
 	public Order changeStatus(Long id, OrderStatus newStatus) {
 		if (newStatus == null) {
 			throw new IllegalArgumentException("status es obligatorio");
@@ -134,6 +178,9 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		}
 		if (newStatus == OrderStatus.PAID) {
 			stockService.decreaseStock(order);
+			if (isBlank(order.getInvoiceNumber())) {
+				order.setInvoiceNumber(formatInvoiceNumber(order.getId()));
+			}
 		} else if (newStatus == OrderStatus.REFUNDED) {
 			stockService.restoreStock(order);
 		}
@@ -143,17 +190,24 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		return saved;
 	}
 
-	public Page<Order> list(String status, Long warehouseId, String couponCode, Long bookId, LocalDateTime createdFrom,
-			LocalDateTime createdTo, Integer page, Integer size, String sort) {
+	public Page<Order> list(String status, Long userId, Long warehouseId, String couponCode, Long bookId,
+			LocalDateTime createdFrom, LocalDateTime createdTo, Integer page, Integer size, String sort) {
 		Page<Order> result = getRepository().findAll(
-				OrderSpecifications.build(parseStatus(status), warehouseId, couponCode, bookId, createdFrom, createdTo),
+				OrderSpecifications.build(parseStatus(status), userId, warehouseId, couponCode, bookId, createdFrom,
+						createdTo),
 				Pageables.of(page, size, sort));
 		log.debug("Listado de ventas: pagina {} con {} resultado(s)", result.getNumber(), result.getTotalElements());
 		return result;
 	}
 
+	/** Ventas de un usuario puntual (usado por "Mis ordenes"). */
+	public Page<Order> listByUser(Long userId, String status, LocalDateTime createdFrom, LocalDateTime createdTo,
+			Integer page, Integer size, String sort) {
+		return list(status, userId, null, null, null, createdFrom, createdTo, page, size, sort);
+	}
+
 	@CacheEvict(cacheNames = CacheNames.ORDERS, key = "#id")
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRED)
 	public void delete(Long id) {
 		Order order = requireById(id);
 		order.setDeleted(true);
@@ -169,6 +223,10 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		};
 	}
 
+	private boolean isBlank(String value) {
+		return value == null || value.isBlank();
+	}
+
 	private OrderStatus parseStatus(String status) {
 		if (status == null || status.isBlank()) {
 			return null;
@@ -178,5 +236,39 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		} catch (IllegalArgumentException e) {
 			throw new IllegalArgumentException("Estado invalido: " + status);
 		}
+	}
+
+	private void validateInvoiceData(OrderCreateRequest request) {
+		if (isBlank(request.getInvoiceName()) || isBlank(request.getInvoiceLastName())
+				|| isBlank(request.getInvoiceRuc()) || isBlank(request.getInvoicePhone())) {
+			throw new IllegalArgumentException("La factura requiere RUC, nombre, apellido y telefono");
+		}
+		if (!request.getInvoiceRuc().trim().matches("[0-9]{5,15}(-[0-9Kk])?")) {
+			throw new IllegalArgumentException("El RUC o CI no tiene un formato valido");
+		}
+		normalizePhone(request.getInvoicePhone());
+	}
+
+	private String formatInvoiceNumber(Long orderId) {
+		return String.format("001-001-%08d", orderId);
+	}
+
+	private String normalizeText(String value) {
+		return value.trim().replaceAll("\\s+", " ");
+	}
+
+	private String normalizeDocument(String value) {
+		return value.trim().replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
+	}
+
+	private String normalizePhone(String value) {
+		String compact = value.trim().replaceAll("[\\s().-]", "");
+		if (compact.matches("09[0-9]{8}")) {
+			return "+595" + compact.substring(1);
+		}
+		if (compact.matches("\\+5959[0-9]{8}")) {
+			return compact;
+		}
+		throw new IllegalArgumentException("El telefono debe tener formato 0999999999 o +595 999999999");
 	}
 }

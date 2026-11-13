@@ -16,7 +16,8 @@ import com.bigobooks.dto.PromotionBookAdd;
 import com.bigobooks.dto.PromotionCreateRequest;
 import com.bigobooks.dto.PromotionUpdateRequest;
 import com.bigobooks.entities.book.Book;
-import com.bigobooks.exception.NotFoundException;
+import com.bigobooks.util.exception.NotFoundException;
+import com.bigobooks.util.exception.ResourceType;
 import com.bigobooks.model.Promotion;
 import com.bigobooks.repositories.PromotionRepository;
 import com.bigobooks.service.BaseService;
@@ -35,7 +36,7 @@ public class PromotionService extends BaseService<Promotion, PromotionRepository
 	}
 
 	public Promotion requireById(Long id) {
-		return findById(id).orElseThrow(() -> new NotFoundException("No existe la promocion con id " + id));
+		return findById(id).orElseThrow(() -> NotFoundException.byId(ResourceType.PROMOTION, id));
 	}
 
 	@Transactional
@@ -115,7 +116,7 @@ public class PromotionService extends BaseService<Promotion, PromotionRepository
 		List<Book> books = promotion.getBooks() != null ? new ArrayList<>(promotion.getBooks()) : new ArrayList<>();
 		boolean removed = books.removeIf(existing -> existing.getId().equals(bookId));
 		if (!removed) {
-			throw new NotFoundException("El libro " + bookId + " no esta asociado a la promocion " + id);
+			throw NotFoundException.notAssociated(ResourceType.BOOK, bookId, ResourceType.PROMOTION, id);
 		}
 		promotion.setBooks(books);
 		Promotion saved = getRepository().save(promotion);

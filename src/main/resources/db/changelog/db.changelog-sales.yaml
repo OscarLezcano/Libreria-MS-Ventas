@@ -207,3 +207,76 @@ databaseChangeLog:
             constraintName: fk_spb_book
             onDelete: CASCADE
             validate: true
+
+  - changeSet:
+      id: sales-008-order-number-and-invoice-data
+      author: sales-service
+      comment: Numero publico de pedido y datos de facturacion del cliente
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: orders
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: order_number
+                  type: VARCHAR(40)
+              - column:
+                  name: invoice_business_name
+                  type: VARCHAR(255)
+              - column:
+                  name: invoice_name
+                  type: VARCHAR(255)
+              - column:
+                  name: invoice_last_name
+                  type: VARCHAR(255)
+        - sql:
+            sql: "UPDATE orders SET order_number = 'PED-LEGACY-' || id WHERE order_number IS NULL"
+        - addNotNullConstraint:
+            tableName: orders
+            columnName: order_number
+            columnDataType: VARCHAR(40)
+        - addUniqueConstraint:
+            tableName: orders
+            columnNames: order_number
+            constraintName: uk_orders_order_number
+
+  - changeSet:
+      id: sales-009-order-invoice-ruc
+      author: sales-service
+      comment: RUC personal del comprador
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: orders
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'invoice_ruc'"
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: invoice_ruc
+                  type: VARCHAR(20)
+
+  - changeSet:
+      id: sales-010-order-invoice-phone
+      author: sales-service
+      comment: Telefono normalizado del comprador
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: orders
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'invoice_phone'"
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: invoice_phone
+                  type: VARCHAR(20)

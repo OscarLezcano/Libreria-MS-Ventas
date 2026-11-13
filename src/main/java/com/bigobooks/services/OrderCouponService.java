@@ -10,7 +10,7 @@ import com.bigobooks.entities.orders.Coupon;
 import com.bigobooks.entities.orders.Order;
 import com.bigobooks.entities.orders.OrderDetail;
 import com.bigobooks.entities.orders.OrderStatus;
-import com.bigobooks.exception.ConflictException;
+import com.bigobooks.util.exception.ConflictException;
 
 /**
  * Reglas de negocio del cupon dentro de una venta: aplicacion, baja y

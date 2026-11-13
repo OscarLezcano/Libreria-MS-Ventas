@@ -51,6 +51,13 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: userId
+          in: query
+          required: false
+          description: Filtra las ventas del usuario indicado (staff)
+          schema:
+            type: integer
+            format: int64
         - name: couponCode
           in: query
           required: false
@@ -104,11 +111,98 @@ paths:
                 $ref: '#/components/schemas/Envelope'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /orders/mine:
+    get:
+      tags: [orders]
+      operationId: listMyOrders
+      summary: Lista las ventas del usuario autenticado
+      description: >-
+        Usa el identificador del usuario incluido en el token JWT (claim uid).
+        No requiere enviar userId como parametro.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Estado de la venta
+          schema:
+            type: string
+            enum: [PENDING, PAID, REFUNDED, CANCELLED]
+        - name: createdFrom
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: createdTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pagina de ventas del usuario autenticado (Envelope con data = OrderDto[] y pagination)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /orders/best-sellers:
+    get:
+      tags: [orders]
+      operationId: listBestSellingBooks
+      summary: Lista los libros mas vendidos
+      description: >-
+        Suma las unidades vendidas por libro en las ventas pagadas (PAID) y
+        devuelve el top ordenado de mayor a menor. No incluye ventas
+        pendientes, canceladas ni reembolsadas.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Cantidad maxima de libros a devolver (1-100)
+          schema:
+            type: integer
+            format: int32
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Libros mas vendidos (Envelope con data = BestSellingBookDto[])
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /orders/{id}:
     get:
       tags: [orders]
       operationId: getOrderById
-      summary: Obtiene una venta por id con sus detalles
+      summary: Obtiene una venta por id (orderDetailIds solo incluye ids)
       parameters:
         - $ref: '#/components/parameters/PathId'
       responses:
@@ -162,8 +256,30 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /orders/{id}/details:
+    get:
+      tags: [orders]
+      operationId: getOrderDetails
+      summary: Obtiene el desglose completo de una venta
+      description: >-
+        Devuelve los detalles completos (libro, cantidad, precio y descuento).
+        Se usa porque las respuestas de /orders solo incluyen los ids de los
+        detalles para no anidar objetos dentro de objetos.
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: Detalles de la venta (Envelope con data = OrderDetailDto[])
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /orders/{id}/status:
-    put:
+    patch:
       tags: [orders]
       operationId: changeOrderStatus
       summary: Cambia el estado de una venta (transiciones validas)
@@ -630,9 +746,15 @@ components:
         createdAt:
           type: string
           format: date-time
-        roleId:
-          type: integer
-          format: int64
+        roleIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        roleNames:
+          type: array
+          items:
+            type: string
     OrderCreateRequest:
       type: object
       properties:
@@ -647,11 +769,27 @@ components:
         couponCode:
           type: string
           description: Codigo de cupon opcional para aplicar al total
+        invoiceName:
+          type: string
+          description: Nombre para la factura
+        invoiceLastName:
+          type: string
+          description: Apellido para la factura
+        invoiceRuc:
+          type: string
+          description: RUC del comprador para la factura personal
+        invoicePhone:
+          type: string
+          description: Telefono del comprador
         items:
           type: array
           items:
             $ref: '#/components/schemas/OrderItemCreate'
       required:
+        - invoiceRuc
+        - invoiceName
+        - invoiceLastName
+        - invoicePhone
         - items
     OrderItemCreate:
       type: object
@@ -681,6 +819,18 @@ components:
           type: string
         invoiceNumber:
           type: string
+        invoiceName:
+          type: string
+          description: Nuevo nombre para la factura
+        invoiceLastName:
+          type: string
+          description: Nuevo apellido para la factura
+        invoiceRuc:
+          type: string
+          description: Nuevo RUC del comprador para la factura personal
+        invoicePhone:
+          type: string
+          description: Nuevo telefono del comprador
     OrderStatusChange:
       type: object
       properties:
@@ -794,6 +944,10 @@ components:
         id:
           type: integer
           format: int64
+        orderNumber:
+          type: string
+          readOnly: true
+          description: Numero publico del pedido, diferente del id interno
         warehouseId:
           type: integer
           format: int64
@@ -816,16 +970,32 @@ components:
           type: string
         invoiceNumber:
           type: string
+        invoiceName:
+          type: string
+          description: Nombre para la factura
+        invoiceLastName:
+          type: string
+          description: Apellido para la factura
+        invoiceRuc:
+          type: string
+          description: RUC del comprador para la factura personal
+        invoicePhone:
+          type: string
+          description: Telefono del comprador normalizado
         createdAt:
           type: string
           format: date-time
         couponId:
           type: integer
           format: int64
-        orderDetails:
+        orderDetailIds:
           type: array
+          description: >-
+            Ids de los detalles de la venta. El desglose completo se consulta
+            en GET /orders/{id}/details.
           items:
-            $ref: '#/components/schemas/OrderDetailDto'
+            type: integer
+            format: int64
     OrderDetailDto:
       type: object
       properties:
@@ -849,6 +1019,18 @@ components:
           type: string
           format: date-time
         orderId:
+          type: integer
+          format: int64
+    BestSellingBookDto:
+      type: object
+      description: Libro vendido, agregado por cantidad de unidades.
+      properties:
+        bookId:
+          type: integer
+          format: int64
+        bookName:
+          type: string
+        totalSold:
           type: integer
           format: int64
     CouponDto:

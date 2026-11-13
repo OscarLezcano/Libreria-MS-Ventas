@@ -9,20 +9,22 @@ import com.bigobooks.dto.OrderDetailDto;
 import com.bigobooks.dto.OrderDto;
 import com.bigobooks.entities.orders.Order;
 import com.bigobooks.entities.orders.OrderDetail;
-import com.bigobooks.entities.orders.OrderStatus;
 
 /**
- * Conversion bidireccional entre Order/OrderDetail y sus DTOs del common.
+ * Conversion de Order/OrderDetail a sus DTOs del common. La venta solo lleva
+ * los ids de sus detalles; el desglose completo se expone por separado.
  */
 @Component
 public class OrderMapper {
 
+	/** DTO de venta con los ids de sus detalles (sin anidar objetos). */
 	public OrderDto toDto(Order order) {
 		if (order == null) {
 			return null;
 		}
 		OrderDto dto = new OrderDto();
 		dto.setId(order.getId());
+		dto.setOrderNumber(order.getOrderNumber());
 		dto.setWarehouseId(order.getWarehouseId());
 		dto.setUserId(order.getUserAccount() != null ? order.getUserAccount().getId() : null);
 		dto.setStatus(order.getStatus() != null ? OrderDto.StatusEnum.valueOf(order.getStatus().name()) : null);
@@ -31,71 +33,26 @@ public class OrderMapper {
 		dto.setDiscountAmount(order.getDiscountAmount());
 		dto.setBancardNumber(order.getBancardNumber());
 		dto.setInvoiceNumber(order.getInvoiceNumber());
+		dto.setInvoiceRuc(order.getInvoiceRuc());
+		dto.setInvoiceName(order.getInvoiceName());
+		dto.setInvoiceLastName(order.getInvoiceLastName());
+		dto.setInvoicePhone(order.getInvoicePhone());
 		dto.setCreatedAt(order.getCreatedAt());
 		dto.setCouponId(order.getCoupon() != null ? order.getCoupon().getId() : null);
 
-		List<OrderDetailDto> details = new ArrayList<>();
+		List<Long> detailIds = new ArrayList<>();
 		if (order.getOrderDetails() != null) {
 			for (OrderDetail detail : order.getOrderDetails()) {
-				details.add(toDetailDto(detail));
+				if (detail != null && detail.getId() != null) {
+					detailIds.add(detail.getId());
+				}
 			}
 		}
-		dto.setOrderDetails(details);
+		dto.setOrderDetailIds(detailIds);
 		return dto;
 	}
 
-	/**
-	 * DTO del common -> entidad. Los ids de usuario y cupon (userId/couponId)
-	 * no se resuelven aqui: el servicio los busca con sus propios
-	 * repositorios; el mapper solo convierte datos planos.
-	 */
-	public Order toEntity(OrderDto dto) {
-		if (dto == null) {
-			return null;
-		}
-		Order order = new Order();
-		order.setId(dto.getId());
-		order.setWarehouseId(dto.getWarehouseId());
-		order.setStatus(dto.getStatus() != null ? OrderStatus.valueOf(dto.getStatus().name()) : null);
-		order.setTotalPrice(dto.getTotalPrice() != null ? dto.getTotalPrice() : 0L);
-		order.setSubtotal(dto.getSubtotal() != null ? dto.getSubtotal() : 0L);
-		order.setDiscountAmount(dto.getDiscountAmount() != null ? dto.getDiscountAmount() : 0L);
-		order.setBancardNumber(dto.getBancardNumber());
-		order.setInvoiceNumber(dto.getInvoiceNumber());
-		order.setCreatedAt(dto.getCreatedAt());
-
-		List<OrderDetail> details = new ArrayList<>();
-		if (dto.getOrderDetails() != null) {
-			for (OrderDetailDto detailDto : dto.getOrderDetails()) {
-				if (detailDto == null) {
-					continue;
-				}
-				OrderDetail detail = toEntity(detailDto);
-				detail.setOrder(order);
-				details.add(detail);
-			}
-		}
-		order.setOrderDetails(details);
-		return order;
-	}
-
-	public OrderDetail toEntity(OrderDetailDto dto) {
-		if (dto == null) {
-			return null;
-		}
-		OrderDetail detail = new OrderDetail();
-		detail.setId(dto.getId());
-		detail.setBookId(dto.getBookId());
-		detail.setBookName(dto.getBookName());
-		if (dto.getQuantity() != null) {
-			detail.setQuantity(dto.getQuantity());
-		}
-		detail.setUnitPrice(dto.getUnitPrice() != null ? dto.getUnitPrice() : 0L);
-		detail.setDiscount(dto.getDiscount() != null ? dto.getDiscount() : 0L);
-		detail.setCreatedAt(dto.getCreatedAt());
-		return detail;
-	}
-
+	/** DTO completo de un detalle (se usa en GET /orders/{id}/details). */
 	public OrderDetailDto toDetailDto(OrderDetail detail) {
 		if (detail == null) {
 			return null;

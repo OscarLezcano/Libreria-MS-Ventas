@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bigobooks.dto.OrderItemCreate;
@@ -35,7 +36,7 @@ public class OrderDetailService extends BaseService<OrderDetail, OrderDetailRepo
 	 * Valida el item del request, resuelve el libro, guarda el detalle y lo
 	 * vincula a la venta.
 	 */
-	@Transactional
+	@Transactional(propagation = Propagation.MANDATORY)
 	public OrderDetail addDetailTo(Order order, OrderItemCreate item) {
 		if (item == null || item.getBookId() == null || item.getQuantity() == null) {
 			throw new IllegalArgumentException("Cada item requiere bookId y quantity");

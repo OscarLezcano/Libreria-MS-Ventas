@@ -11,6 +11,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import com.bigobooks.cache.CacheNames;
 import com.bigobooks.dto.OrderCreateRequest;
@@ -54,7 +55,7 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 				.orElseThrow(() -> NotFoundException.byId(ResourceType.ORDER, id));
 	}
 
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRED)
 	public Order createFromRequest(OrderCreateRequest request) {
 		return createFromRequest(request, request != null ? request.getUserId() : null);
 	}
@@ -63,7 +64,7 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	 * Crea la venta con el usuario indicado. El controlador resuelve el usuario
 	 * autenticado (claim uid) cuando el request no trae userId.
 	 */
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRED)
 	public Order createFromRequest(OrderCreateRequest request, Long userId) {
 		if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
 			throw new IllegalArgumentException("Debe incluir al menos un item en la venta");
@@ -102,7 +103,7 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	}
 
 	@CacheEvict(cacheNames = CacheNames.ORDERS, key = "#id")
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRED)
 	public Order update(Long id, OrderUpdateRequest request) {
 		if (request == null) {
 			throw new IllegalArgumentException("Debe indicar los datos de la venta");
@@ -147,7 +148,7 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	 * reembolso lo devuelve.
 	 */
 	@CacheEvict(cacheNames = CacheNames.ORDERS, key = "#id")
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRED)
 	public Order changeStatus(Long id, OrderStatus newStatus) {
 		if (newStatus == null) {
 			throw new IllegalArgumentException("status es obligatorio");
@@ -191,7 +192,7 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	}
 
 	@CacheEvict(cacheNames = CacheNames.ORDERS, key = "#id")
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRED)
 	public void delete(Long id) {
 		Order order = requireById(id);
 		order.setDeleted(true);

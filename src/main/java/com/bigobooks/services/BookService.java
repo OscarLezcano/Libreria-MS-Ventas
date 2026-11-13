@@ -1,6 +1,8 @@
 package com.bigobooks.services;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.bigobooks.entities.book.Book;
 import com.bigobooks.util.exception.NotFoundException;
@@ -19,6 +21,7 @@ public class BookService extends BaseService<Book, BookRepository> {
 		super(repository);
 	}
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Book requireById(Long id) {
 		return findById(id).orElseThrow(() -> NotFoundException.byId(ResourceType.BOOK, id));
 	}

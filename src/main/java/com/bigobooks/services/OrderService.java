@@ -174,6 +174,9 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		Order order = requireById(id);
 		OrderStatus current = order.getStatus();
 		if (current == newStatus) {
+			if (newStatus == OrderStatus.PAID) {
+				return order;
+			}
 			throw new ConflictException("La venta ya esta en el estado " + current);
 		}
 		if (!isAllowedTransition(current, newStatus)) {

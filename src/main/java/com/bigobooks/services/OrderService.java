@@ -110,6 +110,9 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 			orderCouponService.applyCoupon(saved, request.getCouponCode());
 		}
 
+		if (saved.getWarehouseId() == null) {
+			saved.setWarehouseId(stockService.resolveWarehouseId(saved));
+		}
 		Order result = getRepository().save(saved);
 		log.info("Venta {} creada: {} item(s), subtotal={}, descuento={}, total={}", result.getId(),
 				result.getOrderDetails().size(), result.getSubtotal(), result.getDiscountAmount(),
@@ -177,6 +180,9 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 			throw new ConflictException("Transicion no permitida: " + current + " -> " + newStatus);
 		}
 		if (newStatus == OrderStatus.PAID) {
+			if (order.getWarehouseId() == null) {
+				order.setWarehouseId(stockService.resolveWarehouseId(order));
+			}
 			stockService.decreaseStock(order);
 			if (isBlank(order.getInvoiceNumber())) {
 				order.setInvoiceNumber(formatInvoiceNumber(order.getId()));

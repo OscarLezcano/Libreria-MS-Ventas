@@ -51,13 +51,13 @@ public class OrdersController implements OrdersApi {
 		this.bookService = bookService;
 	}
 
-	@GetMapping("/transaction-demo/direct/{propagation}")
+	@GetMapping("/orders/transaction-demo/direct/{propagation}")
 	@PreAuthorize("@roles.allows('orders-view')")
 	public ResponseEntity<Map<String, String>> transactionDirect(@PathVariable String propagation) {
 		return ResponseEntity.ok(Map.of("mode", "direct", "result", invokeDirect(propagation)));
 	}
 
-	@GetMapping("/transaction-demo/from-parent/{propagation}")
+	@GetMapping("/orders/transaction-demo/from-parent/{propagation}")
 	@PreAuthorize("@roles.allows('orders-view')")
 	public ResponseEntity<Map<String, String>> transactionFromParent(@PathVariable String propagation) {
 		return ResponseEntity.ok(Map.of("mode", "from-parent", "result",
@@ -76,9 +76,9 @@ public class OrdersController implements OrdersApi {
 			default -> throw new IllegalArgumentException("Propagacion no soportada: " + propagation);
 			};
 		} catch (RuntimeException exception) {
-			log.info("TX-DEMO {} mode=direct exception={}", propagation,
-					exception.getClass().getSimpleName());
-			return "EXCEPTION " + exception.getClass().getSimpleName();
+			log.warn("TX-DEMO {} mode=direct exception={} message={}", propagation,
+					exception.getClass().getSimpleName(), exception.getMessage());
+			return "EXCEPTION " + exception.getClass().getSimpleName() + ": " + exception.getMessage();
 		}
 	}
 
@@ -86,9 +86,9 @@ public class OrdersController implements OrdersApi {
 		try {
 			return orderService.transactionPropagationDemo(propagation);
 		} catch (RuntimeException exception) {
-			log.info("TX-DEMO {} mode=from-parent exception={}", propagation,
-					exception.getClass().getSimpleName());
-			return "EXCEPTION " + exception.getClass().getSimpleName();
+			log.warn("TX-DEMO {} mode=from-parent exception={} message={}", propagation,
+					exception.getClass().getSimpleName(), exception.getMessage());
+			return "EXCEPTION " + exception.getClass().getSimpleName() + ": " + exception.getMessage();
 		}
 	}
 

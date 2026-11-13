@@ -19,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.bigobooks.dto.PromotionBookAdd;
 import com.bigobooks.dto.PromotionCreateRequest;
 import com.bigobooks.entities.book.Book;
-import com.bigobooks.exception.NotFoundException;
+import com.bigobooks.util.exception.NotFoundException;
 import com.bigobooks.model.Promotion;
 import com.bigobooks.repositories.PromotionRepository;
 

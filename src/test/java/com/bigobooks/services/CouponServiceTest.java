@@ -20,8 +20,8 @@ import org.springframework.data.jpa.domain.Specification;
 import com.bigobooks.dto.CouponCreateRequest;
 import com.bigobooks.dto.CouponUpdateRequest;
 import com.bigobooks.entities.orders.Coupon;
-import com.bigobooks.exception.ConflictException;
-import com.bigobooks.exception.NotFoundException;
+import com.bigobooks.util.exception.ConflictException;
+import com.bigobooks.util.exception.NotFoundException;
 import com.bigobooks.repositories.CouponRepository;
 
 @ExtendWith(MockitoExtension.class)

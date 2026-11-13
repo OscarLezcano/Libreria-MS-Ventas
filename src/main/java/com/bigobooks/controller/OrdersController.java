@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -164,7 +165,21 @@ public class OrdersController implements OrdersApi {
 		log.info("PUT /orders/{}/status: cambio de estado recibido", id);
 		OrderStatusChange.StatusEnum status = orderStatusChange == null ? null : orderStatusChange.getStatus();
 		OrderStatus newStatus = status == null ? null : OrderStatus.valueOf(status.name());
+		ensureClientCanPayOwnOrder(id, newStatus);
 		return ResponseEntity.ok(Envelopes.single(orderMapper.toDto(orderService.changeStatus(id, newStatus))));
+	}
+
+	private void ensureClientCanPayOwnOrder(Long id, OrderStatus newStatus) {
+		if (!currentUser.hasAnyRole("CLIENT")) {
+			return;
+		}
+		if (newStatus != OrderStatus.PAID) {
+			throw new AccessDeniedException("El cliente solo puede confirmar el pago de su propio pedido");
+		}
+		Order order = orderService.requireById(id);
+		if (order.getUserAccount() == null || !currentUser.id().equals(order.getUserAccount().getId())) {
+			throw new AccessDeniedException("No puede confirmar el pago de otro usuario");
+		}
 	}
 
 	@Override

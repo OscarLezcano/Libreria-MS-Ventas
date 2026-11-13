@@ -196,7 +196,7 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		order.setStatus(newStatus);
 		Order saved = getRepository().save(order);
 		log.info("Venta {}: {} -> {}", saved.getId(), current, newStatus);
-		return saved;
+		return requireById(saved.getId());
 	}
 
 	public Page<Order> list(String status, Long userId, Long warehouseId, String couponCode, Long bookId,

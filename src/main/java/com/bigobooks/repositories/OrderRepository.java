@@ -17,7 +17,7 @@ import com.bigobooks.repository.BaseRepository;
 public interface OrderRepository extends BaseRepository<Order>, JpaSpecificationExecutor<Order> {
 
 	/** Trae la venta con sus detalles ya inicializados (para el mapper). */
-	@EntityGraph(attributePaths = "orderDetails")
+	@EntityGraph(attributePaths = { "orderDetails", "userAccount", "coupon" })
 	@Query("select o from Order o where o.id = :id")
 	Optional<Order> findByIdWithDetails(@Param("id") Long id);
 

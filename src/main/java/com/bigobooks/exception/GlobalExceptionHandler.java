@@ -14,6 +14,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.bigobooks.dto.ErrorDto;
+import com.bigobooks.util.exception.ConflictException;
+import com.bigobooks.util.exception.NotFoundException;
+import com.bigobooks.util.exception.UnauthorizedException;
 
 import jakarta.validation.ConstraintViolationException;
 

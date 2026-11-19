@@ -51,6 +51,12 @@ public class OrderQueryService {
 		return orderMapper.toDto(orderService.requireById(id));
 	}
 
+	/** Pedido propio por numeroOrden (no se cachea para no envejecer su estado). */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public OrderDto getByNumeroOrden(String numeroOrden, Long userId) {
+		return orderMapper.toDto(orderService.requireOwnByNumeroOrden(numeroOrden, userId));
+	}
+
 	/**
 	 * Desglose completo de la venta. No se cachea para no mezclar tipos en el
 	 * cache de ventas.
@@ -58,6 +64,22 @@ public class OrderQueryService {
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<OrderDetailDto> getDetails(Long id) {
 		Order order = orderService.requireById(id);
+		List<OrderDetailDto> details = new ArrayList<>();
+		if (order.getOrderDetails() != null) {
+			for (OrderDetail detail : order.getOrderDetails()) {
+				details.add(orderMapper.toDetailDto(detail));
+			}
+		}
+		return details;
+	}
+
+	/** Desglose publico de un pedido propio, por numeroOrden. */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<OrderDetailDto> getDetailsByNumeroOrden(String numeroOrden, Long userId) {
+		return toDetailDtos(orderService.requireOwnByNumeroOrden(numeroOrden, userId));
+	}
+
+	private List<OrderDetailDto> toDetailDtos(Order order) {
 		List<OrderDetailDto> details = new ArrayList<>();
 		if (order.getOrderDetails() != null) {
 			for (OrderDetail detail : order.getOrderDetails()) {

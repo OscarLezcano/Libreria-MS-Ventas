@@ -42,6 +42,7 @@ public class StockService extends BaseService<Stock, StockRepository> {
 	 */
 	public Long resolveWarehouseId(Order order) {
 		if (order.getWarehouseId() != null) {
+			validateAvailability(order, order.getWarehouseId());
 			return order.getWarehouseId();
 		}
 
@@ -67,6 +68,30 @@ public class StockService extends BaseService<Stock, StockRepository> {
 		return getRepository().findByBookIdAndWarehouse_Id(bookId, warehouseId)
 				.map(stock -> stock.getQuantity() >= quantity)
 				.orElse(false);
+	}
+
+	/** Valida stock usando el almacen ya resuelto del pedido (incluso explicito). */
+	public void validateAvailability(Order order) {
+		if (order.getWarehouseId() == null) {
+			resolveWarehouseId(order);
+			return;
+		}
+		validateAvailability(order, order.getWarehouseId());
+	}
+
+	private void validateAvailability(Order order, Long warehouseId) {
+		Map<Long, Integer> requiredQuantities = new HashMap<>();
+		if (order.getOrderDetails() != null) {
+			for (OrderDetail detail : order.getOrderDetails()) {
+				requiredQuantities.merge(detail.getBookId(), detail.getQuantity(), Integer::sum);
+			}
+		}
+		for (Map.Entry<Long, Integer> entry : requiredQuantities.entrySet()) {
+			if (!hasSufficientStock(entry.getKey(), entry.getValue(), warehouseId)) {
+				throw new ConflictException("Stock insuficiente del libro " + entry.getKey() + " en el almacen "
+						+ warehouseId);
+			}
+		}
 	}
 
 	/**

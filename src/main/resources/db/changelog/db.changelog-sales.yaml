@@ -280,3 +280,137 @@ databaseChangeLog:
               - column:
                   name: invoice_phone
                   type: VARCHAR(20)
+
+  - changeSet:
+      id: sales-011-numero-orden
+      author: sales-service
+      comment: Numero de orden publico de 8 digitos con backfill unico
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: orders
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'numero_orden'"
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: numero_orden
+                  type: VARCHAR(8)
+        - sql:
+            splitStatements: false
+            sql: |
+              UPDATE orders o
+              SET numero_orden = LPAD((10000000 + s.rn)::text, 8, '0')
+              FROM (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn
+                FROM orders
+                WHERE numero_orden IS NULL
+              ) s
+              WHERE o.id = s.id
+        - addNotNullConstraint:
+            tableName: orders
+            columnName: numero_orden
+            columnDataType: VARCHAR(8)
+        - addUniqueConstraint:
+            tableName: orders
+            columnNames: numero_orden
+            constraintName: uk_orders_numero_orden
+
+  - changeSet:
+      id: sales-012-idempotencia-y-cupon
+      author: sales-service
+      comment: Clave de idempotencia por usuario y snapshot del cupon
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: orders
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'idempotency_key'"
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: idempotency_key
+                  type: VARCHAR(255)
+              - column:
+                  name: request_hash
+                  type: VARCHAR(64)
+              - column:
+                  name: coupon_code
+                  type: VARCHAR(100)
+        - sql:
+            splitStatements: false
+            sql: |
+              UPDATE orders o
+              SET coupon_code = c.code
+              FROM coupon c
+              WHERE o.coupon_id = c.id
+                AND o.coupon_code IS NULL
+        - addUniqueConstraint:
+            tableName: orders
+            columnNames: user_id, idempotency_key
+            constraintName: uk_orders_user_idempotency
+
+  - changeSet:
+      id: sales-013-shipping-snapshot
+      author: sales-service
+      comment: Snapshot del destinatario separado de la facturacion
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: orders
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'shipping_name'"
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: shipping_name
+                  type: VARCHAR(255)
+              - column:
+                  name: shipping_last_name
+                  type: VARCHAR(255)
+              - column:
+                  name: shipping_department
+                  type: VARCHAR(255)
+              - column:
+                  name: shipping_city
+                  type: VARCHAR(255)
+              - column:
+                  name: shipping_address
+                  type: VARCHAR(500)
+              - column:
+                  name: shipping_reference
+                  type: VARCHAR(500)
+              - column:
+                  name: shipping_phone
+                  type: VARCHAR(50)
+
+  - changeSet:
+      id: sales-014-order-detail-catalog-snapshot
+      author: sales-service
+      comment: Portada y autores snapshot del catalogo en el detalle del pedido
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: order_detail
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'order_detail' AND column_name = 'cover_src'"
+      changes:
+        - addColumn:
+            tableName: order_detail
+            columns:
+              - column:
+                  name: cover_src
+                  type: VARCHAR(500)
+              - column:
+                  name: authors
+                  type: VARCHAR(500)

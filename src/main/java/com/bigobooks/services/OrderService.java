@@ -272,13 +272,13 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 		return requireById(saved.getId());
 	}
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
 	public Page<Order> list(String status, Long userId, Long warehouseId, String couponCode, Long bookId,
 			LocalDateTime createdFrom, LocalDateTime createdTo, Integer page, Integer size, String sort) {
 		return list(status, userId, warehouseId, couponCode, bookId, createdFrom, createdTo, page, size, sort, null);
 	}
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
 	public Page<Order> list(String status, Long userId, Long warehouseId, String couponCode, Long bookId,
 			LocalDateTime createdFrom, LocalDateTime createdTo, Integer page, Integer size, String sort,
 			String search) {
@@ -287,7 +287,8 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 						createdTo, search),
 				Pageables.of(page, size, sort));
 		// La paginacion no usa fetch join de la coleccion para no paginar en memoria;
-		// se inicializa aqui, dentro de la transaccion, antes de mapear el DTO.
+		// se inicializa aqui, dentro de la transaccion REQUIRED, antes de mapear el DTO.
+		// SUPPORTS no sirve: el repository cierra su EntityManager al terminar findAll.
 		for (Order order : result.getContent()) {
 			if (order.getOrderDetails() != null) {
 				order.getOrderDetails().size();
@@ -298,13 +299,13 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	}
 
 	/** Ventas de un usuario puntual (usado por "Mis ordenes"). */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
 	public Page<Order> listByUser(Long userId, String status, LocalDateTime createdFrom, LocalDateTime createdTo,
 			Integer page, Integer size, String sort) {
 		return listByUser(userId, status, createdFrom, createdTo, page, size, sort, null);
 	}
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
 	public Page<Order> listByUser(Long userId, String status, LocalDateTime createdFrom, LocalDateTime createdTo,
 			Integer page, Integer size, String sort, String search) {
 		return list(status, userId, null, null, null, createdFrom, createdTo, page, size, sort, search);

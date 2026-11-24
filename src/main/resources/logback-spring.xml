@@ -49,4 +49,7 @@
 	<!-- Queries JPA/Hibernate en DEBUG (consultas reales ejecutadas) -->
 	<logger name="org.hibernate.SQL" level="${levelSql}"/>
 	<logger name="org.hibernate.type.descriptor.sql" level="${levelSql}"/>
+	<logger name="org.springframework.transaction" level="DEBUG"/>
+	<logger name="org.springframework.transaction.interceptor" level="TRACE"/>
+	<logger name="org.springframework.orm.jpa" level="DEBUG"/>
 </configuration>

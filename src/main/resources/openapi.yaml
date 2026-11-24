@@ -14,6 +14,11 @@ paths:
       tags: [orders]
       operationId: createOrder
       summary: Crea una venta (pedido) con sus items y cupon opcional
+      description: >-
+        La cabecera Idempotency-Key es obligatoria para CLIENT y opcional para
+        ADMIN/SELLER. El alcance de la clave es (usuario autenticado, clave).
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -139,6 +144,12 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: search
+          in: query
+          required: false
+          description: Busca por numeroOrden o invoiceNumber
+          schema:
+            type: string
         - name: page
           in: query
           required: false
@@ -295,6 +306,80 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/OrderStatusChange'
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /orders/numero/{numeroOrden}:
+    get:
+      tags: [orders]
+      operationId: getOrderByNumeroOrden
+      summary: Obtiene un pedido propio por numeroOrden (8 digitos)
+      description: >-
+        Contrato publico del cliente. El identificador interno no se expone.
+        Un numero invalido devuelve 400; inexistente o de otro usuario, 404.
+      parameters:
+        - $ref: '#/components/parameters/PathNumeroOrden'
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /orders/numero/{numeroOrden}/details:
+    get:
+      tags: [orders]
+      operationId: getOrderDetailsByNumeroOrden
+      summary: Obtiene el desglose publico de un pedido propio
+      parameters:
+        - $ref: '#/components/parameters/PathNumeroOrden'
+      responses:
+        '200':
+          description: Detalles del pedido (Envelope con data = OrderDetailDto[])
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /orders/numero/{numeroOrden}/status:
+    patch:
+      tags: [orders]
+      operationId: changeOrderStatusByNumeroOrden
+      summary: Confirma o cancela un pedido propio por numeroOrden
+      description: >-
+        Solo se aceptan PAID y CANCELLED. PAID es idempotente para un pedido
+        ya pagado y descuenta stock una sola vez. No se envian datos de tarjeta.
+      parameters:
+        - $ref: '#/components/parameters/PathNumeroOrden'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderClientStatusChange'
       responses:
         '200':
           description: Estado actualizado
@@ -630,6 +715,23 @@ components:
       schema:
         type: integer
         format: int64
+    PathNumeroOrden:
+      name: numeroOrden
+      in: path
+      required: true
+      description: Identificador publico del pedido (exactamente 8 digitos)
+      schema:
+        type: string
+        pattern: '^\d{8}$'
+      example: '12345678'
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Obligatoria para CLIENT; opcional para ADMIN/SELLER
+      schema:
+        type: string
+        minLength: 1
   responses:
     BadRequest:
       description: Peticion invalida
@@ -781,6 +883,20 @@ components:
         invoicePhone:
           type: string
           description: Telefono del comprador
+        shippingName:
+          type: string
+        shippingLastName:
+          type: string
+        shippingDepartment:
+          type: string
+        shippingCity:
+          type: string
+        shippingAddress:
+          type: string
+        shippingReference:
+          type: string
+        shippingPhone:
+          type: string
         items:
           type: array
           items:
@@ -790,6 +906,12 @@ components:
         - invoiceName
         - invoiceLastName
         - invoicePhone
+        - shippingName
+        - shippingLastName
+        - shippingDepartment
+        - shippingCity
+        - shippingAddress
+        - shippingPhone
         - items
     OrderItemCreate:
       type: object
@@ -815,8 +937,6 @@ components:
           type: integer
           format: int64
           description: Nuevo usuario de la venta (null = sin usuario)
-        bancardNumber:
-          type: string
         invoiceNumber:
           type: string
         invoiceName:
@@ -831,12 +951,35 @@ components:
         invoicePhone:
           type: string
           description: Nuevo telefono del comprador
+        shippingName:
+          type: string
+        shippingLastName:
+          type: string
+        shippingDepartment:
+          type: string
+        shippingCity:
+          type: string
+        shippingAddress:
+          type: string
+        shippingReference:
+          type: string
+        shippingPhone:
+          type: string
     OrderStatusChange:
       type: object
       properties:
         status:
           type: string
           enum: [PENDING, PAID, REFUNDED, CANCELLED]
+      required:
+        - status
+    OrderClientStatusChange:
+      type: object
+      description: Transiciones permitidas para el flujo del cliente.
+      properties:
+        status:
+          type: string
+          enum: [PAID, CANCELLED]
       required:
         - status
     CouponCreateRequest:
@@ -947,7 +1090,11 @@ components:
         orderNumber:
           type: string
           readOnly: true
-          description: Numero publico del pedido, diferente del id interno
+          description: Identificador interno legado (no se expone en el contrato publico)
+        numeroOrden:
+          type: string
+          pattern: '^\d{8}$'
+          description: Identificador publico del pedido
         warehouseId:
           type: integer
           format: int64
@@ -966,10 +1113,30 @@ components:
         discountAmount:
           type: integer
           format: int64
-        bancardNumber:
+        couponCode:
           type: string
         invoiceNumber:
           type: string
+        shipping:
+          type: object
+          properties:
+            name: {type: string}
+            lastName: {type: string}
+            department: {type: string}
+            city: {type: string}
+            address: {type: string}
+            reference: {type: string}
+            phone: {type: string}
+        productCount:
+          type: integer
+          format: int64
+        totalUnits:
+          type: integer
+          format: int64
+        orderDetails:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderDetailDto'
         invoiceName:
           type: string
           description: Nombre para la factura
@@ -1015,6 +1182,15 @@ components:
         discount:
           type: integer
           format: int64
+        lineTotal:
+          type: integer
+          format: int64
+        coverSrc:
+          type: string
+        authors:
+          type: array
+          items:
+            type: string
         createdAt:
           type: string
           format: date-time

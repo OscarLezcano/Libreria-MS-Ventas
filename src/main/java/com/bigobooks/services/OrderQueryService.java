@@ -6,6 +6,8 @@ import java.util.List;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.bigobooks.cache.CacheNames;
 import com.bigobooks.dto.BestSellingBookDto;
@@ -44,16 +46,40 @@ public class OrderQueryService {
 
 	/** Venta con los ids de sus detalles. */
 	@Cacheable(cacheNames = CacheNames.ORDERS, key = "#id", sync = true)
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public OrderDto getById(Long id) {
 		return orderMapper.toDto(orderService.requireById(id));
+	}
+
+	/** Pedido propio por numeroOrden (no se cachea para no envejecer su estado). */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public OrderDto getByNumeroOrden(String numeroOrden, Long userId) {
+		return orderMapper.toDto(orderService.requireOwnByNumeroOrden(numeroOrden, userId));
 	}
 
 	/**
 	 * Desglose completo de la venta. No se cachea para no mezclar tipos en el
 	 * cache de ventas.
 	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<OrderDetailDto> getDetails(Long id) {
 		Order order = orderService.requireById(id);
+		List<OrderDetailDto> details = new ArrayList<>();
+		if (order.getOrderDetails() != null) {
+			for (OrderDetail detail : order.getOrderDetails()) {
+				details.add(orderMapper.toDetailDto(detail));
+			}
+		}
+		return details;
+	}
+
+	/** Desglose publico de un pedido propio, por numeroOrden. */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<OrderDetailDto> getDetailsByNumeroOrden(String numeroOrden, Long userId) {
+		return toDetailDtos(orderService.requireOwnByNumeroOrden(numeroOrden, userId));
+	}
+
+	private List<OrderDetailDto> toDetailDtos(Order order) {
 		List<OrderDetailDto> details = new ArrayList<>();
 		if (order.getOrderDetails() != null) {
 			for (OrderDetail detail : order.getOrderDetails()) {
@@ -67,6 +93,7 @@ public class OrderQueryService {
 	 * Libros mas vendidos: suma las unidades de los detalles de ventas PAID.
 	 * El limite se acota entre 1 y 100.
 	 */
+	@Transactional(propagation = Propagation.NOT_SUPPORTED, readOnly = true)
 	public List<BestSellingBookDto> getBestSellingBooks(Integer limit) {
 		int size = limit == null ? DEFAULT_BEST_SELLERS : limit;
 		size = Math.max(1, Math.min(size, MAX_BEST_SELLERS));

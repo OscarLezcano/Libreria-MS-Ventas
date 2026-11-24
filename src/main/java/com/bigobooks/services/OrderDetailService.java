@@ -1,10 +1,12 @@
 package com.bigobooks.services;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bigobooks.dto.OrderItemCreate;
@@ -35,7 +37,7 @@ public class OrderDetailService extends BaseService<OrderDetail, OrderDetailRepo
 	 * Valida el item del request, resuelve el libro, guarda el detalle y lo
 	 * vincula a la venta.
 	 */
-	@Transactional
+	@Transactional(propagation = Propagation.MANDATORY)
 	public OrderDetail addDetailTo(Order order, OrderItemCreate item) {
 		if (item == null || item.getBookId() == null || item.getQuantity() == null) {
 			throw new IllegalArgumentException("Cada item requiere bookId y quantity");
@@ -55,6 +57,8 @@ public class OrderDetailService extends BaseService<OrderDetail, OrderDetailRepo
 		detail.setQuantity(item.getQuantity());
 		detail.setUnitPrice(book.getPrice());
 		detail.setDiscount(0L);
+		detail.setCoverSrc(book.getCoverUrl());
+		detail.setAuthors(snapshotAuthors(book));
 		getRepository().save(detail);
 		if (order.getOrderDetails() == null) {
 			order.setOrderDetails(new ArrayList<>());
@@ -63,5 +67,18 @@ public class OrderDetailService extends BaseService<OrderDetail, OrderDetailRepo
 		log.debug("Detalle del libro {} agregado a la venta {} ({} u.)", detail.getBookId(), order.getId(),
 				detail.getQuantity());
 		return detail;
+	}
+
+	private String snapshotAuthors(Book book) {
+		if (book.getAuthors() == null) {
+			return "";
+		}
+		List<String> names = book.getAuthors().stream()
+				.map(bookAuthor -> bookAuthor == null || bookAuthor.getAuthor() == null
+						? null : bookAuthor.getAuthor().getName())
+				.filter(name -> name != null && !name.isBlank())
+				.map(String::trim)
+				.toList();
+		return String.join(", ", names);
 	}
 }

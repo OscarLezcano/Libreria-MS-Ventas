@@ -28,6 +28,11 @@ public final class OrderSpecifications {
 
 	public static Specification<Order> build(OrderStatus status, Long userId, Long warehouseId, String couponCode,
 			Long bookId, LocalDateTime createdFrom, LocalDateTime createdTo) {
+		return build(status, userId, warehouseId, couponCode, bookId, createdFrom, createdTo, null);
+	}
+
+	public static Specification<Order> build(OrderStatus status, Long userId, Long warehouseId, String couponCode,
+			Long bookId, LocalDateTime createdFrom, LocalDateTime createdTo, String search) {
 		return (Root<Order> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
@@ -57,6 +62,12 @@ public final class OrderSpecifications {
 			}
 			if (createdTo != null) {
 				predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), createdTo));
+			}
+			if (search != null && !search.isBlank()) {
+				String pattern = "%" + search.trim().toLowerCase() + "%";
+				predicates.add(cb.or(
+						cb.like(cb.lower(root.get("numeroOrden")), pattern),
+						cb.like(cb.lower(root.get("invoiceNumber")), pattern)));
 			}
 
 			return cb.and(predicates.toArray(new Predicate[0]));

@@ -41,7 +41,11 @@ public class OrderCouponService {
 		if (coupon.getValidUntil() != null && coupon.getValidUntil().isBefore(LocalDateTime.now())) {
 			throw new IllegalArgumentException("El cupon " + coupon.getCode() + " esta vencido");
 		}
+		if (coupon.getDiscountPercent() < 0 || coupon.getDiscountPercent() > 100) {
+			throw new IllegalArgumentException("El porcentaje del cupon no es valido");
+		}
 		order.setCoupon(coupon);
+		order.setCouponCode(coupon.getCode());
 		recalculate(order);
 		log.debug("Cupon {} aplicado a la venta {}", coupon.getCode(), order.getId());
 	}
@@ -53,7 +57,11 @@ public class OrderCouponService {
 		long subtotal = 0;
 		if (order.getOrderDetails() != null) {
 			for (OrderDetail detail : order.getOrderDetails()) {
-				subtotal += detail.getUnitPrice() * detail.getQuantity() - detail.getDiscount();
+				long lineTotal = calculateLineTotal(detail);
+				if (lineTotal < 0) {
+					throw new IllegalArgumentException("El descuento del item no puede superar el precio del libro");
+				}
+				subtotal += lineTotal;
 			}
 		}
 		long discount = 0;
@@ -63,5 +71,13 @@ public class OrderCouponService {
 		order.setSubtotal(subtotal);
 		order.setDiscountAmount(discount);
 		order.setTotalPrice(subtotal - discount);
+	}
+
+	/** Regla unica de calculo de linea, reutilizada por el mapper publico. */
+	public static long calculateLineTotal(OrderDetail detail) {
+		if (detail.getUnitPrice() < 0 || detail.getDiscount() < 0) {
+			throw new IllegalArgumentException("Precio y descuento del item no pueden ser negativos");
+		}
+		return detail.getUnitPrice() * detail.getQuantity() - detail.getDiscount();
 	}
 }

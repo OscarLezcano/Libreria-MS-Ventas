@@ -38,7 +38,7 @@ class OrderServiceIdempotencyTest {
 		fingerprint = new OrderRequestFingerprint();
 		service = new OrderService(repository, mock(OrderDetailService.class), mock(UserAccountService.class),
 				mock(WarehouseService.class), stockService, mock(OrderCouponService.class), mock(BookService.class),
-				fingerprint);
+				fingerprint, mock(MailOutboxService.class));
 	}
 
 	@Test

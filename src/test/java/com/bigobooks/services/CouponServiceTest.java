@@ -30,6 +30,9 @@ class CouponServiceTest {
 	@Mock
 	private CouponRepository repository;
 
+	@Mock
+	private BookService bookService;
+
 	@InjectMocks
 	private CouponService couponService;
 
@@ -41,13 +44,26 @@ class CouponServiceTest {
 		CouponCreateRequest request = new CouponCreateRequest();
 		request.setCode(" VERANO ");
 		request.setDiscountPercent(15);
+		request.setValidFrom(LocalDateTime.of(2026, 1, 1, 0, 0));
 		request.setValidUntil(LocalDateTime.of(2026, 12, 31, 23, 59));
 
 		Coupon coupon = couponService.createFromRequest(request);
 
 		assertEquals("VERANO", coupon.getCode());
 		assertEquals(15, coupon.getDiscountPercent());
+		assertEquals(LocalDateTime.of(2026, 1, 1, 0, 0), coupon.getValidFrom());
 		assertEquals(LocalDateTime.of(2026, 12, 31, 23, 59), coupon.getValidUntil());
+	}
+
+	@Test
+	void createRechazaFechasInvertidas() {
+		CouponCreateRequest request = new CouponCreateRequest();
+		request.setCode("VERANO");
+		request.setDiscountPercent(15);
+		request.setValidFrom(LocalDateTime.of(2026, 12, 31, 23, 59));
+		request.setValidUntil(LocalDateTime.of(2026, 1, 1, 0, 0));
+
+		assertThrows(IllegalArgumentException.class, () -> couponService.createFromRequest(request));
 	}
 
 	@Test

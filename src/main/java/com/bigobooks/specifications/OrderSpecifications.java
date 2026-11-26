@@ -33,6 +33,12 @@ public final class OrderSpecifications {
 
 	public static Specification<Order> build(OrderStatus status, Long userId, Long warehouseId, String couponCode,
 			Long bookId, LocalDateTime createdFrom, LocalDateTime createdTo, String search) {
+		return build(status, userId, warehouseId, couponCode, bookId, createdFrom, createdTo, search, null, null);
+	}
+
+	public static Specification<Order> build(OrderStatus status, Long userId, Long warehouseId, String couponCode,
+			Long bookId, LocalDateTime createdFrom, LocalDateTime createdTo, String search, Long minTotal,
+			Long maxTotal) {
 		return (Root<Order> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
@@ -62,6 +68,12 @@ public final class OrderSpecifications {
 			}
 			if (createdTo != null) {
 				predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), createdTo));
+			}
+			if (minTotal != null) {
+				predicates.add(cb.greaterThanOrEqualTo(root.get("totalPrice"), minTotal));
+			}
+			if (maxTotal != null) {
+				predicates.add(cb.lessThanOrEqualTo(root.get("totalPrice"), maxTotal));
 			}
 			if (search != null && !search.isBlank()) {
 				String pattern = "%" + search.trim().toLowerCase() + "%";

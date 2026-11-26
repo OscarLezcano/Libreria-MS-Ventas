@@ -150,6 +150,22 @@ paths:
           description: Busca por numeroOrden o invoiceNumber
           schema:
             type: string
+        - name: minTotal
+          in: query
+          required: false
+          description: Total minimo del pedido en guaranies
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: maxTotal
+          in: query
+          required: false
+          description: Total maximo del pedido en guaranies
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
         - name: page
           in: query
           required: false
@@ -991,10 +1007,23 @@ components:
         discountPercent:
           type: integer
           description: Descuento entre 1 y 100
+        validFrom:
+          type: string
+          format: date-time
+          description: Inicio de vigencia (opcional; nulo = sin fecha de inicio)
         validUntil:
           type: string
           format: date-time
           description: Vencimiento (opcional; nulo = sin vencimiento)
+        bookIds:
+          type: array
+          description: Libros a los que aplica. Vacio = todo el pedido.
+          items:
+            type: integer
+            format: int64
+        singleUsePerUser:
+          type: boolean
+          description: Si es true, cada usuario puede usarlo una sola vez.
       required:
         - code
         - discountPercent
@@ -1003,10 +1032,23 @@ components:
       properties:
         discountPercent:
           type: integer
+        validFrom:
+          type: string
+          format: date-time
+          description: Inicio de vigencia (null = sin fecha de inicio)
         validUntil:
           type: string
           format: date-time
           description: Vencimiento (null = sin vencimiento)
+        bookIds:
+          type: array
+          description: Libros a los que aplica. Vacio = todo el pedido.
+          items:
+            type: integer
+            format: int64
+        singleUsePerUser:
+          type: boolean
+          description: Si es true, cada usuario puede usarlo una sola vez.
     PromotionCreateRequest:
       type: object
       properties:
@@ -1219,9 +1261,23 @@ components:
           type: string
         discountPercent:
           type: integer
+        validFrom:
+          type: string
+          format: date-time
+          description: Inicio de vigencia (opcional; nulo = sin fecha de inicio)
         validUntil:
           type: string
           format: date-time
+          description: Fin de vigencia (opcional; nulo = sin vencimiento)
+        bookIds:
+          type: array
+          description: Libros a los que aplica. Vacio = todo el pedido.
+          items:
+            type: integer
+            format: int64
+        singleUsePerUser:
+          type: boolean
+          description: Si es true, cada usuario puede usarlo una sola vez.
         createdAt:
           type: string
           format: date-time

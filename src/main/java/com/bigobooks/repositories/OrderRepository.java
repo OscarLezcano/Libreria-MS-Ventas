@@ -1,5 +1,6 @@
 package com.bigobooks.repositories;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,6 +14,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.bigobooks.entities.orders.Order;
+import com.bigobooks.entities.orders.OrderStatus;
 import com.bigobooks.repository.BaseRepository;
 
 import jakarta.persistence.LockModeType;
@@ -40,6 +42,15 @@ public interface OrderRepository extends BaseRepository<Order>, JpaSpecification
 	@Query("select o from Order o where o.idempotencyKey = :idempotencyKey and o.userAccount.id = :userId")
 	Optional<Order> findByIdempotencyKeyAndUserId(@Param("idempotencyKey") String idempotencyKey,
 			@Param("userId") Long userId);
+
+	/**
+	 * Cantidad de ventas activas del usuario que ya usaron el cupon. Permite
+	 * implementar el limite de un uso por usuario sin tabla adicional.
+	 */
+	@Query("select count(o) from Order o where o.userAccount.id = :userId and o.couponCode = :couponCode "
+			+ "and o.id <> :orderId and o.status in :statuses")
+	long countActiveCouponUsages(@Param("userId") Long userId, @Param("couponCode") String couponCode,
+			@Param("orderId") Long orderId, @Param("statuses") Collection<OrderStatus> statuses);
 
 	@EntityGraph(attributePaths = { "userAccount", "coupon" })
 	@Override

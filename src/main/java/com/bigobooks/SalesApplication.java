@@ -9,6 +9,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Microservicio de ventas. Se excluye {@link BigoBooksApplication} (la clase
@@ -17,6 +18,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  */
 @SpringBootConfiguration
 @EnableAutoConfiguration
+@EnableScheduling
 @ComponentScan(basePackages = "com.bigobooks",
 		excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = BigoBooksApplication.class))
 @EnableJpaRepositories(basePackages = "com.bigobooks.repositories")

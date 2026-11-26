@@ -4,10 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 import com.bigobooks.dto.CouponDto;
+import com.bigobooks.entities.book.Book;
 import com.bigobooks.entities.orders.Coupon;
 
 /**
@@ -23,14 +25,22 @@ class CouponMapperTest {
 		coupon.setId(7L);
 		coupon.setCode("VERANO");
 		coupon.setDiscountPercent(15);
+		coupon.setValidFrom(LocalDateTime.of(2026, 1, 1, 0, 0));
 		coupon.setValidUntil(LocalDateTime.of(2026, 12, 31, 23, 59));
+		coupon.setSingleUsePerUser(true);
+		Book book = new Book();
+		book.setId(3L);
+		coupon.setBooks(List.of(book));
 
 		CouponDto dto = mapper.toDto(coupon);
 
 		assertEquals(7L, dto.getId());
 		assertEquals("VERANO", dto.getCode());
 		assertEquals(15, dto.getDiscountPercent());
+		assertEquals(LocalDateTime.of(2026, 1, 1, 0, 0), dto.getValidFrom());
 		assertEquals(LocalDateTime.of(2026, 12, 31, 23, 59), dto.getValidUntil());
+		assertEquals(Boolean.TRUE, dto.getSingleUsePerUser());
+		assertEquals(List.of(3L), dto.getBookIds());
 	}
 
 	@Test

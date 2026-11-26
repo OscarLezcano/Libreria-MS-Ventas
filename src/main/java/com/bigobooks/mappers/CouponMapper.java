@@ -1,8 +1,12 @@
 package com.bigobooks.mappers;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import com.bigobooks.dto.CouponDto;
+import com.bigobooks.entities.book.Book;
 import com.bigobooks.entities.orders.Coupon;
 
 /**
@@ -19,14 +23,24 @@ public class CouponMapper {
 		dto.setId(coupon.getId());
 		dto.setCode(coupon.getCode());
 		dto.setDiscountPercent(coupon.getDiscountPercent());
+		dto.setValidFrom(coupon.getValidFrom());
 		dto.setValidUntil(coupon.getValidUntil());
+		dto.setSingleUsePerUser(coupon.isSingleUsePerUser());
 		dto.setCreatedAt(coupon.getCreatedAt());
+
+		List<Long> bookIds = new ArrayList<>();
+		if (coupon.getBooks() != null) {
+			for (Book book : coupon.getBooks()) {
+				bookIds.add(book.getId());
+			}
+		}
+		dto.setBookIds(bookIds);
 		return dto;
 	}
 
 	/**
-	 * DTO del common -> entidad. Las ordenes asociadas al cupon no se
-	 * resuelven aqui: las carga el servicio con su repositorio.
+	 * DTO del common -> entidad. Las ordenes y los libros asociados al cupon
+	 * no se resuelven aqui: los carga el servicio con sus repositorios.
 	 */
 	public Coupon toEntity(CouponDto dto) {
 		if (dto == null) {
@@ -38,7 +52,9 @@ public class CouponMapper {
 		if (dto.getDiscountPercent() != null) {
 			coupon.setDiscountPercent(dto.getDiscountPercent());
 		}
+		coupon.setValidFrom(dto.getValidFrom());
 		coupon.setValidUntil(dto.getValidUntil());
+		coupon.setSingleUsePerUser(Boolean.TRUE.equals(dto.getSingleUsePerUser()));
 		coupon.setCreatedAt(dto.getCreatedAt());
 		return coupon;
 	}

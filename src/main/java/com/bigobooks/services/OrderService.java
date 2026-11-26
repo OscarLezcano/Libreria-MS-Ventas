@@ -45,12 +45,14 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	private final OrderCouponService orderCouponService;
 	private final BookService bookService;
 	private final OrderRequestFingerprint requestFingerprint;
+	private final MailOutboxService mailOutboxService;
 
 	public OrderService(OrderRepository repository, OrderDetailService orderDetailService,
 			UserAccountService userAccountService, WarehouseService warehouseService, StockService stockService,
 			OrderCouponService orderCouponService, BookService bookService,
-			OrderRequestFingerprint requestFingerprint) {
+			OrderRequestFingerprint requestFingerprint, MailOutboxService mailOutboxService) {
 		super(repository);
+		this.mailOutboxService = mailOutboxService;
 		this.orderDetailService = orderDetailService;
 		this.userAccountService = userAccountService;
 		this.warehouseService = warehouseService;
@@ -167,6 +169,12 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 			// Valida stock tambien cuando el almacen viene explicito en el request.
 			saved.setWarehouseId(stockService.resolveWarehouseId(saved));
 			Order result = getRepository().save(saved);
+			if (result.getUserAccount() != null) {
+				mailOutboxService.enqueue(result.getUserAccount().getEmail(),
+						"Compra registrada " + result.getNumeroOrden(),
+						"Hola " + result.getUserAccount().getName() + ",\n\nTu compra fue registrada con el numero de orden "
+								+ result.getNumeroOrden() + " por un total de " + result.getTotalPrice() + " Gs.\n\nGracias por tu compra.");
+			}
 			log.info("Venta {} creada: numeroOrden={}, {} item(s), subtotal={}, descuento={}, total={}",
 					result.getId(), result.getNumeroOrden(), result.getOrderDetails().size(), result.getSubtotal(),
 					result.getDiscountAmount(), result.getTotalPrice());
@@ -282,9 +290,23 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	public Page<Order> list(String status, Long userId, Long warehouseId, String couponCode, Long bookId,
 			LocalDateTime createdFrom, LocalDateTime createdTo, Integer page, Integer size, String sort,
 			String search) {
+		return list(status, userId, warehouseId, couponCode, bookId, createdFrom, createdTo, page, size, sort, search,
+				null, null);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
+	public Page<Order> list(String status, Long userId, Long warehouseId, String couponCode, Long bookId,
+			LocalDateTime createdFrom, LocalDateTime createdTo, Integer page, Integer size, String sort,
+			String search, Long minTotal, Long maxTotal) {
+		if ((minTotal != null && minTotal < 0) || (maxTotal != null && maxTotal < 0)) {
+			throw new IllegalArgumentException("Los totales del filtro no pueden ser negativos");
+		}
+		if (minTotal != null && maxTotal != null && minTotal > maxTotal) {
+			throw new IllegalArgumentException("El total minimo no puede ser mayor que el total maximo");
+		}
 		Page<Order> result = getRepository().findAll(
 				OrderSpecifications.build(parseStatus(status), userId, warehouseId, couponCode, bookId, createdFrom,
-						createdTo, search),
+						createdTo, search, minTotal, maxTotal),
 				Pageables.of(page, size, sort));
 		// La paginacion no usa fetch join de la coleccion para no paginar en memoria;
 		// se inicializa aqui, dentro de la transaccion REQUIRED, antes de mapear el DTO.
@@ -308,7 +330,14 @@ public class OrderService extends BaseService<Order, OrderRepository> {
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
 	public Page<Order> listByUser(Long userId, String status, LocalDateTime createdFrom, LocalDateTime createdTo,
 			Integer page, Integer size, String sort, String search) {
-		return list(status, userId, null, null, null, createdFrom, createdTo, page, size, sort, search);
+		return listByUser(userId, status, createdFrom, createdTo, page, size, sort, search, null, null);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
+	public Page<Order> listByUser(Long userId, String status, LocalDateTime createdFrom, LocalDateTime createdTo,
+			Integer page, Integer size, String sort, String search, Long minTotal, Long maxTotal) {
+		return list(status, userId, null, null, null, createdFrom, createdTo, page, size, sort, search, minTotal,
+				maxTotal);
 	}
 
 	@CacheEvict(cacheNames = CacheNames.ORDERS, key = "#id")

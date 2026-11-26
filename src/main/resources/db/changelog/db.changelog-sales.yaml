@@ -414,3 +414,108 @@ databaseChangeLog:
               - column:
                   name: authors
                   type: VARCHAR(500)
+
+  # Cupones: vigencia desde, uso unico por usuario y libros aplicables.
+  # Los cupones existentes quedan con valid_from nulo y single_use_per_user
+  # en false, por lo que mantienen su comportamiento historico.
+  - changeSet:
+      id: sales-015-coupon-valid-from
+      author: sales-service
+      comment: Inicio de vigencia del cupon
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: coupon
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'coupon' AND column_name = 'valid_from'"
+      changes:
+        - addColumn:
+            tableName: coupon
+            columns:
+              - column:
+                  name: valid_from
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+  - changeSet:
+      id: sales-016-coupon-single-use
+      author: sales-service
+      comment: Limite opcional de un uso por usuario
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: coupon
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'coupon' AND column_name = 'single_use_per_user'"
+      changes:
+        - addColumn:
+            tableName: coupon
+            columns:
+              - column:
+                  name: single_use_per_user
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: sales-017-create-coupon-book
+      author: sales-service
+      comment: Tabla intermedia coupon_book (M2M Coupon-Book)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: coupon
+        - tableExists:
+            tableName: book
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.tables WHERE table_name = 'coupon_book'"
+      changes:
+        - createTable:
+            tableName: coupon_book
+            columns:
+              - column:
+                  name: coupon_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: book_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: coupon_book
+            columnNames: coupon_id, book_id
+            constraintName: pk_coupon_book
+
+  - changeSet:
+      id: sales-018-fks-coupon-book
+      author: sales-service
+      comment: FKs de coupon_book hacia coupon y book
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: coupon_book
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM information_schema.table_constraints WHERE table_name = 'coupon_book' AND constraint_name = 'fk_cb_coupon'"
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: coupon_book
+            baseColumnNames: coupon_id
+            referencedTableName: coupon
+            referencedColumnNames: id
+            constraintName: fk_cb_coupon
+            onDelete: CASCADE
+            validate: true
+        - addForeignKeyConstraint:
+            baseTableName: coupon_book
+            baseColumnNames: book_id
+            referencedTableName: book
+            referencedColumnNames: id
+            constraintName: fk_cb_book
+            onDelete: CASCADE
+            validate: true

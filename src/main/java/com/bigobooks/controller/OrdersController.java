@@ -126,11 +126,11 @@ public class OrdersController implements OrdersApi {
 	@Override
 	@PreAuthorize("@roles.allows('orders-view')")
 	public ResponseEntity<Envelope> listMyOrders(String status, LocalDateTime createdFrom, LocalDateTime createdTo,
-			String search, Integer page, Integer size, String sort) {
+			String search, Long minTotal, Long maxTotal, Integer page, Integer size, String sort) {
 		Long userId = currentUser.id();
 		log.info("GET /orders/mine: listado de ventas del usuario {}", userId);
 		Page<Order> orders = orderService.listByUser(userId, status, createdFrom, createdTo, page, size, sort,
-				search);
+				search, minTotal, maxTotal);
 		List<OrderDto> data = orders.map(orderMapper::toDto).getContent();
 		return ResponseEntity.ok(Envelopes.page(orders, data));
 	}
@@ -179,7 +179,7 @@ public class OrdersController implements OrdersApi {
 	}
 
 	@Override
-	@PreAuthorize("@roles.allows('orders-view')")
+	@PreAuthorize("@roles.allows('best-sellers')")
 	public ResponseEntity<Envelope> listBestSellingBooks(Integer limit) {
 		log.info("GET /orders/best-sellers: top {} libros mas vendidos", limit);
 		return ResponseEntity.ok(Envelopes.single(orderQueryService.getBestSellingBooks(limit)));
